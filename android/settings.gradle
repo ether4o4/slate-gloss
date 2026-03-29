@@ -2,7 +2,10 @@ pluginManagement {
     includeBuild("../node_modules/@react-native/gradle-plugin")
 }
 plugins {
-    id("com.facebook.react.settings")
+    id("com.facebook.react.settings").apply(false)
+}
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+    ex.autolinkLibrariesFromCommand()
 }
 
 rootProject.name = 'VistaLauncher'
