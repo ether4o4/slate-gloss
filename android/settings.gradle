@@ -4,10 +4,11 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+    includeBuild('../node_modules/@react-native/gradle-plugin')
 }
 
 plugins {
-    id("com.facebook.react.settings")
+    id('com.facebook.react.settings')
 }
 
 rootProject.name = 'VistaLauncher'
