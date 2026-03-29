@@ -55,9 +55,7 @@ jobs:
           ${{ runner.os }}-gradle-
 
     - name: Install dependencies
-      run: |
-        npm ci --legacy-peer-deps
-        cd android && ./gradlew --version --no-configuration-cache
+      run: npm ci --legacy-peer-deps
 
     - name: Make gradlew executable
       run: chmod +x android/gradlew
