@@ -1,8 +1,9 @@
 import React, {useCallback, useRef, useState} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import type {AppInfo} from '../../native/Launcher';
-import type {DesktopIcon as DesktopIconModel} from '../../db/LauncherStore';
+import type {DesktopIcon as DesktopIconModel, DesktopWidget} from '../../db/LauncherStore';
 import {DesktopIcon} from './DesktopIcon';
+import {HostedWidget} from './HostedWidget';
 import {Vista} from '../../theme';
 
 interface Rect {
@@ -15,6 +16,7 @@ interface Rect {
 interface Props {
   apps: Record<string, AppInfo>;
   icons: DesktopIconModel[];
+  widgets: DesktopWidget[];
   recycleCount: number;
   cellWidth: number;
   cellHeight: number;
@@ -25,11 +27,14 @@ interface Props {
   onMoveIcon: (pkg: string, col: number, row: number) => void;
   onRecycle: (pkg: string) => void;
   onOpenRecycle: () => void;
+  onMoveWidget: (id: number, x: number, y: number) => void;
+  onRemoveWidget: (id: number) => void;
 }
 
 export const Desktop: React.FC<Props> = ({
   apps,
   icons,
+  widgets,
   recycleCount,
   cellWidth,
   cellHeight,
@@ -40,6 +45,8 @@ export const Desktop: React.FC<Props> = ({
   onMoveIcon,
   onRecycle,
   onOpenRecycle,
+  onMoveWidget,
+  onRemoveWidget,
 }) => {
   const gridOrigin = useRef<Rect>({x: 0, y: 0, w: 0, h: 0});
   const binRect = useRef<Rect>({x: 0, y: 0, w: 0, h: 0});
@@ -78,6 +85,10 @@ export const Desktop: React.FC<Props> = ({
 
   return (
     <View style={styles.fill} ref={gridRef} onLayout={measure}>
+      {widgets.map(w => (
+        <HostedWidget key={w.widgetId} widget={w} onMove={onMoveWidget} onRemove={onRemoveWidget} />
+      ))}
+
       {icons.map(icon => {
         const app = apps[icon.packageName];
         return (

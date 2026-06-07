@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.app.WallpaperManager
 import android.app.role.RoleManager
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -29,6 +30,7 @@ import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.WritableArray
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.facebook.react.bridge.ActivityEventListener
+import com.facebook.react.bridge.LifecycleEventListener
 import java.io.ByteArrayOutputStream
 import java.io.File
 
@@ -38,14 +40,30 @@ import java.io.File
  * notifications. Everything runs on demand — no background polling.
  */
 class LauncherModule(private val reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext), ActivityEventListener {
+    ReactContextBaseJavaModule(reactContext), ActivityEventListener, LifecycleEventListener {
 
   private var wallpaperPromise: Promise? = null
   private var imagePromise: Promise? = null
+  private var widgetPromise: Promise? = null
+  private var pendingWidgetId = -1
 
   init {
     reactContext.addActivityEventListener(this)
+    reactContext.addLifecycleEventListener(this)
     ctx = reactContext
+  }
+
+  // ---- LifecycleEventListener: keep the widget host listening while visible --
+  override fun onHostResume() {
+    WidgetHost.startListening(reactContext)
+  }
+
+  override fun onHostPause() {
+    WidgetHost.stopListening(reactContext)
+  }
+
+  override fun onHostDestroy() {
+    WidgetHost.stopListening(reactContext)
   }
 
   override fun getName(): String = "LauncherModule"
@@ -221,6 +239,39 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
           p?.resolve("")
         }
       }
+      REQ_WIDGET_PICK -> {
+        if (resultCode == Activity.RESULT_OK) {
+          val id = data?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, pendingWidgetId)
+              ?: pendingWidgetId
+          val info = WidgetHost.manager(reactContext).getAppWidgetInfo(id)
+          if (info?.configure != null) {
+            try {
+              pendingWidgetId = id
+              val cfg = Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE)
+                  .setComponent(info.configure)
+                  .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+              activity?.startActivityForResult(cfg, REQ_WIDGET_CONFIGURE)
+            } catch (e: Exception) {
+              finishWidget(id)
+            }
+          } else {
+            finishWidget(id)
+          }
+        } else {
+          try { WidgetHost.host(reactContext).deleteAppWidgetId(pendingWidgetId) } catch (_: Exception) {}
+          widgetPromise?.resolve(null)
+          widgetPromise = null
+        }
+      }
+      REQ_WIDGET_CONFIGURE -> {
+        if (resultCode == Activity.RESULT_OK) {
+          finishWidget(pendingWidgetId)
+        } else {
+          try { WidgetHost.host(reactContext).deleteAppWidgetId(pendingWidgetId) } catch (_: Exception) {}
+          widgetPromise?.resolve(null)
+          widgetPromise = null
+        }
+      }
     }
   }
 
@@ -244,6 +295,57 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
       promise.resolve(map)
     } catch (e: Exception) {
       promise.reject("battery_failed", e.message, e)
+    }
+  }
+
+  // ---- App widgets (hosting) -------------------------------------------
+
+  @ReactMethod
+  fun pickWidget(promise: Promise) {
+    val activity = currentActivity
+    if (activity == null) {
+      promise.reject("no_activity", "No current activity")
+      return
+    }
+    try {
+      WidgetHost.startListening(reactContext)
+      val id = WidgetHost.host(reactContext).allocateAppWidgetId()
+      pendingWidgetId = id
+      widgetPromise = promise
+      val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_PICK)
+          .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+      activity.startActivityForResult(intent, REQ_WIDGET_PICK)
+    } catch (e: Exception) {
+      widgetPromise = null
+      promise.reject("widget_pick_failed", e.message, e)
+    }
+  }
+
+  @ReactMethod
+  fun removeWidget(widgetId: Int) {
+    try {
+      WidgetHost.host(reactContext).deleteAppWidgetId(widgetId)
+    } catch (_: Exception) {}
+  }
+
+  private fun finishWidget(id: Int) {
+    val p = widgetPromise
+    widgetPromise = null
+    try {
+      val info = WidgetHost.manager(reactContext).getAppWidgetInfo(id)
+      if (info == null) {
+        p?.resolve(null)
+        return
+      }
+      val d = reactContext.resources.displayMetrics.density
+      val map = Arguments.createMap()
+      map.putInt("widgetId", id)
+      map.putInt("minWidth", (info.minWidth / d).toInt())
+      map.putInt("minHeight", (info.minHeight / d).toInt())
+      map.putString("label", info.loadLabel(reactContext.packageManager)?.toString() ?: "Widget")
+      p?.resolve(map)
+    } catch (e: Exception) {
+      p?.reject("widget_info_failed", e.message, e)
     }
   }
 
@@ -370,6 +472,8 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
     private const val ICON_SIZE_PX = 144
     private const val REQ_WALLPAPER = 42001
     private const val REQ_IMAGE = 42002
+    private const val REQ_WIDGET_PICK = 42010
+    private const val REQ_WIDGET_CONFIGURE = 42011
 
     @Volatile private var ctx: ReactApplicationContext? = null
 

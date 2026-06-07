@@ -13,6 +13,15 @@ export interface RecycleItem {
   deletedAt: number;
 }
 
+/** A real Android AppWidget placed on the desktop (free position + size in px). */
+export interface DesktopWidget {
+  widgetId: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface LauncherState {
   pinned: string[]; // package names pinned to the Start menu
   desktop: DesktopIcon[]; // shortcuts placed on the desktop
@@ -23,6 +32,7 @@ export interface LauncherState {
   startIcon: string; // custom Start-button image uri ('' = default pearl)
   widgets: string[]; // enabled widgets in the calendar/notification panel
   notes: string; // contents of the notes widget
+  desktopWidgets: DesktopWidget[]; // real hosted AppWidgets on the desktop
 }
 
 /** All widgets available in the calendar/notification panel. */
@@ -50,6 +60,7 @@ const DEFAULT_STATE: LauncherState = {
   startIcon: '',
   widgets: ['calendar', 'notifications', 'weather', 'battery'],
   notes: '',
+  desktopWidgets: [],
 };
 
 export const loadState = async (): Promise<LauncherState> => {
@@ -173,4 +184,24 @@ export const toggleWidget = (state: LauncherState, id: string): LauncherState =>
 export const setNotes = (state: LauncherState, notes: string): LauncherState => ({
   ...state,
   notes,
+});
+
+export const addDesktopWidget = (state: LauncherState, w: DesktopWidget): LauncherState => ({
+  ...state,
+  desktopWidgets: [...state.desktopWidgets, w],
+});
+
+export const removeDesktopWidget = (state: LauncherState, widgetId: number): LauncherState => ({
+  ...state,
+  desktopWidgets: state.desktopWidgets.filter(w => w.widgetId !== widgetId),
+});
+
+export const moveDesktopWidget = (
+  state: LauncherState,
+  widgetId: number,
+  x: number,
+  y: number,
+): LauncherState => ({
+  ...state,
+  desktopWidgets: state.desktopWidgets.map(w => (w.widgetId === widgetId ? {...w, x, y} : w)),
 });

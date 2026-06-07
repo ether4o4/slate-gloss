@@ -44,6 +44,7 @@ import {
   type SystemInfo,
 } from './src/native/Launcher';
 import {getWeather, type Weather} from './src/api/Weather';
+import {pickWidget, removeHostedWidget} from './src/native/Widgets';
 import {
   loadState,
   saveState,
@@ -59,6 +60,9 @@ import {
   setStartIcon,
   toggleWidget,
   setNotes,
+  addDesktopWidget,
+  removeDesktopWidget,
+  moveDesktopWidget,
   type LauncherState,
 } from './src/db/LauncherStore';
 
@@ -203,6 +207,38 @@ const App: React.FC = () => {
 
   const resetStart = useCallback(() => update(s => setStartIcon(s, '')), [update]);
 
+  // ---- Real widget hosting ---------------------------------------------
+
+  const addWidget = useCallback(async () => {
+    const meta = await pickWidget();
+    if (!meta) return;
+    const screenW = Dimensions.get('window').width;
+    const w = Math.max(120, Math.min(meta.minWidth || 160, screenW - 24));
+    const h = Math.max(80, Math.min(meta.minHeight || 120, 420));
+    update(s =>
+      addDesktopWidget(s, {
+        widgetId: meta.widgetId,
+        x: 12,
+        y: 12 + s.desktopWidgets.length * 16,
+        w,
+        h,
+      }),
+    );
+  }, [update]);
+
+  const removeWidget = useCallback(
+    (id: number) => {
+      removeHostedWidget(id);
+      update(s => removeDesktopWidget(s, id));
+    },
+    [update],
+  );
+
+  const moveWidget = useCallback(
+    (id: number, x: number, y: number) => update(s => moveDesktopWidget(s, id, x, y)),
+    [update],
+  );
+
   // ---- Swarm command sandbox (tool calls) ------------------------------
 
   const findApp = useCallback(
@@ -314,6 +350,7 @@ const App: React.FC = () => {
         <Desktop
           apps={appsByPkg}
           icons={state.desktop}
+          widgets={state.desktopWidgets}
           recycleCount={state.recycle.length}
           cellWidth={CELL_W}
           cellHeight={CELL_H}
@@ -324,6 +361,8 @@ const App: React.FC = () => {
           onMoveIcon={(pkg, col, row) => update(s => moveDesktopIcon(s, pkg, col, row))}
           onRecycle={pkg => update(s => recycleDesktopIcon(s, pkg))}
           onOpenRecycle={() => setRecycleOpen(true)}
+          onMoveWidget={moveWidget}
+          onRemoveWidget={removeWidget}
         />
       </View>
 
@@ -413,6 +452,10 @@ const App: React.FC = () => {
         onPickStartIcon={pickStart}
         onResetStartIcon={resetStart}
         onChangeWallpaper={changeWallpaper}
+        onAddWidget={() => {
+          setPersonalizeOpen(false);
+          addWidget();
+        }}
       />
 
       <Modal
