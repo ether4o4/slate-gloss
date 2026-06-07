@@ -25,3 +25,15 @@ export const Vista = {
   accent: '#2f7bf6',
   danger: '#e2574c',
 };
+
+/** Selectable taskbar gradients for the Personalize panel. */
+export const TASKBAR_PRESETS: {name: string; colors: string[]}[] = [
+  {name: 'Aero Blue', colors: ['rgba(40,73,120,0.78)', 'rgba(15,36,64,0.92)']},
+  {name: 'Graphite', colors: ['rgba(62,64,72,0.85)', 'rgba(20,21,26,0.95)']},
+  {name: 'Obsidian', colors: ['rgba(24,24,26,0.9)', 'rgba(0,0,0,0.96)']},
+  {name: 'Emerald', colors: ['rgba(22,92,70,0.82)', 'rgba(8,42,30,0.94)']},
+  {name: 'Royal', colors: ['rgba(80,52,140,0.82)', 'rgba(30,18,64,0.94)']},
+  {name: 'Crimson', colors: ['rgba(124,40,52,0.82)', 'rgba(48,14,20,0.94)']},
+  {name: 'Slate Gloss', colors: ['rgba(70,82,98,0.82)', 'rgba(24,30,40,0.94)']},
+  {name: 'Sunset', colors: ['rgba(150,86,40,0.82)', 'rgba(60,28,16,0.94)']},
+];

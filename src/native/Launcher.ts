@@ -34,6 +34,7 @@ interface LauncherNativeModule {
   openNotificationAccessSettings(): void;
   getNotifications(): Promise<NotificationInfo[]>;
   dismissNotification(key: string): void;
+  pickStartIcon(): Promise<string>;
 }
 
 const native: LauncherNativeModule | undefined = NativeModules.LauncherModule;
@@ -79,6 +80,17 @@ export const chooseWallpaper = async (): Promise<boolean> => {
   } catch (e) {
     console.error('chooseWallpaper failed:', e);
     return false;
+  }
+};
+
+/** Lets the user pick an image for the Start button; returns a file:// uri ('' if cancelled). */
+export const pickStartIcon = async (): Promise<string> => {
+  if (!native) return '';
+  try {
+    return await native.pickStartIcon();
+  } catch (e) {
+    console.error('pickStartIcon failed:', e);
+    return '';
   }
 };
 

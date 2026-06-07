@@ -2,6 +2,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   Dimensions,
   FlatList,
+  Keyboard,
   Modal,
   PanResponder,
   Pressable,
@@ -26,14 +27,14 @@ interface Props {
   onLaunch: (pkg: string) => void;
   onItemMenu: (pkg: string) => void;
   onResize: (width: number, height: number) => void;
-  onChangeWallpaper: () => void;
+  onPersonalize: () => void;
   onSetDefault: () => void;
   onOpenSwarm: () => void;
 }
 
 const screen = Dimensions.get('window');
-const DEFAULT_W = Math.min(screen.width - 20, 600);
-const DEFAULT_H = Math.min(Math.round(screen.height * 0.62), 580);
+const DEFAULT_W = Math.min(screen.width - 20, 620);
+const DEFAULT_H = Math.min(Math.round(screen.height * 0.72), 720);
 const MIN_W = 300;
 const MIN_H = 380;
 const MAX_W = screen.width - 12;
@@ -69,11 +70,12 @@ export const StartMenu: React.FC<Props> = ({
   onLaunch,
   onItemMenu,
   onResize,
-  onChangeWallpaper,
+  onPersonalize,
   onSetDefault,
   onOpenSwarm,
 }) => {
   const [query, setQuery] = useState('');
+  const [kb, setKb] = useState(0);
   const [dims, setDims] = useState({
     w: size.width || DEFAULT_W,
     h: size.height || DEFAULT_H,
@@ -90,6 +92,16 @@ export const StartMenu: React.FC<Props> = ({
       setDims({w: size.width || DEFAULT_W, h: size.height || DEFAULT_H});
     }
   }, [visible, size.width, size.height]);
+
+  // Lift the panel above the soft keyboard (window doesn't resize anymore).
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', e => setKb(e.endCoordinates.height));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKb(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const resizer = useRef(
     PanResponder.create({
@@ -120,7 +132,9 @@ export const StartMenu: React.FC<Props> = ({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable onPress={() => {}} style={[styles.panelWrap, {width: dims.w, height: dims.h}]}>
+        <Pressable
+          onPress={() => {}}
+          style={[styles.panelWrap, {width: dims.w, height: dims.h, marginBottom: 72 + kb}]}>
           <GlassSurface radius={18} style={styles.panel}>
             {/* resize handle (top-right corner) */}
             <View {...resizer.panHandlers} style={styles.resizeHandle}>
@@ -150,10 +164,12 @@ export const StartMenu: React.FC<Props> = ({
                       onMenu={() => onItemMenu(item.packageName)}
                     />
                   )}
-                  showsVerticalScrollIndicator={false}
-                  initialNumToRender={14}
-                  windowSize={6}
-                  removeClippedSubviews
+                  showsVerticalScrollIndicator
+                  keyboardShouldPersistTaps="handled"
+                  initialNumToRender={30}
+                  maxToRenderPerBatch={30}
+                  windowSize={21}
+                  removeClippedSubviews={false}
                 />
               </View>
 
@@ -203,7 +219,7 @@ export const StartMenu: React.FC<Props> = ({
             {/* footer actions */}
             <View style={styles.footer}>
               <FooterBtn icon="✦" label="Swarm" onPress={onOpenSwarm} />
-              <FooterBtn icon="🖼" label="Wallpaper" onPress={onChangeWallpaper} />
+              <FooterBtn icon="🎨" label="Personalize" onPress={onPersonalize} />
               <FooterBtn icon="⚙" label="Default" onPress={onSetDefault} />
             </View>
           </GlassSurface>

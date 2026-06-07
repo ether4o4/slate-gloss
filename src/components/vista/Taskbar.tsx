@@ -9,6 +9,8 @@ import {AppIconImage} from './Icon';
 interface Props {
   startActive: boolean;
   pinned: AppInfo[];
+  colors: string[];
+  startIconUri?: string;
   onStartPress: () => void;
   onSwarmPress: () => void;
   onClockPress: () => void;
@@ -18,6 +20,8 @@ interface Props {
 export const Taskbar: React.FC<Props> = ({
   startActive,
   pinned,
+  colors,
+  startIconUri,
   onStartPress,
   onSwarmPress,
   onClockPress,
@@ -38,13 +42,13 @@ export const Taskbar: React.FC<Props> = ({
   }, []);
 
   return (
-    <LinearGradient colors={Vista.taskbar} style={styles.bar}>
+    <LinearGradient colors={colors} style={styles.bar}>
       <LinearGradient
         colors={['rgba(255,255,255,0.5)', 'rgba(255,255,255,0)']}
         style={styles.topEdge}
         pointerEvents="none"
       />
-      <StartOrb active={startActive} onPress={onStartPress} size={48} />
+      <StartOrb active={startActive} onPress={onStartPress} size={48} imageUri={startIconUri} />
 
       <ScrollView
         horizontal

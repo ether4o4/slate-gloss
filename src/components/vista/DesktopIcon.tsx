@@ -18,8 +18,14 @@ interface Props {
   onDragEnd: (absX: number, absY: number) => void;
 }
 
-const MOVE_THRESHOLD = 8;
+const MOVE_THRESHOLD = 6;
+const LONG_PRESS_MS = 450;
 
+/**
+ * Tap = launch. Move = drag (decided by movement, not a timer). Holding still
+ * and then *releasing* opens the menu. Because the menu only fires on release,
+ * it can never interrupt a drag or leave you stuck mid-gesture.
+ */
 export const DesktopIcon: React.FC<Props> = ({
   app,
   label,
@@ -34,17 +40,10 @@ export const DesktopIcon: React.FC<Props> = ({
   onDragEnd,
 }) => {
   const pan = useRef(new Animated.ValueXY({x: 0, y: 0})).current;
+  const lift = useRef(new Animated.Value(0)).current;
   const dragging = useRef(false);
-  const longPressed = useRef(false);
-  const longTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const grantTime = useRef(0);
   const zIndex = useRef(new Animated.Value(0)).current;
-
-  const clearTimer = () => {
-    if (longTimer.current) {
-      clearTimeout(longTimer.current);
-      longTimer.current = null;
-    }
-  };
 
   const responder = useRef(
     PanResponder.create({
@@ -53,20 +52,13 @@ export const DesktopIcon: React.FC<Props> = ({
         Math.abs(g.dx) > MOVE_THRESHOLD || Math.abs(g.dy) > MOVE_THRESHOLD,
       onPanResponderGrant: () => {
         dragging.current = false;
-        longPressed.current = false;
-        clearTimer();
-        longTimer.current = setTimeout(() => {
-          if (!dragging.current) {
-            longPressed.current = true;
-            onLongPress();
-          }
-        }, 500);
+        grantTime.current = Date.now();
       },
       onPanResponderMove: (e, g) => {
         if (!dragging.current && (Math.abs(g.dx) > MOVE_THRESHOLD || Math.abs(g.dy) > MOVE_THRESHOLD)) {
           dragging.current = true;
-          clearTimer();
           zIndex.setValue(999);
+          Animated.spring(lift, {toValue: 1, useNativeDriver: false, speed: 40}).start();
           onDragStart();
         }
         if (dragging.current) {
@@ -74,33 +66,39 @@ export const DesktopIcon: React.FC<Props> = ({
           onDragMove(e.nativeEvent.pageX, e.nativeEvent.pageY);
         }
       },
-      onPanResponderRelease: (e, g) => {
-        clearTimer();
+      onPanResponderRelease: (e) => {
         if (dragging.current) {
           dragging.current = false;
           onDragEnd(e.nativeEvent.pageX, e.nativeEvent.pageY);
           Animated.spring(pan, {toValue: {x: 0, y: 0}, useNativeDriver: false, speed: 30}).start(() =>
             zIndex.setValue(0),
           );
-        } else if (!longPressed.current) {
+          Animated.timing(lift, {toValue: 0, duration: 120, useNativeDriver: false}).start();
+        } else if (Date.now() - grantTime.current >= LONG_PRESS_MS) {
+          onLongPress();
+        } else {
           onTap();
         }
       },
       onPanResponderTerminate: () => {
-        clearTimer();
         dragging.current = false;
+        zIndex.setValue(0);
         Animated.spring(pan, {toValue: {x: 0, y: 0}, useNativeDriver: false}).start();
+        Animated.timing(lift, {toValue: 0, duration: 120, useNativeDriver: false}).start();
       },
     }),
   ).current;
+
+  const scale = lift.interpolate({inputRange: [0, 1], outputRange: [1, 1.12]});
+  const opacity = lift.interpolate({inputRange: [0, 1], outputRange: [1, 0.85]});
 
   return (
     <Animated.View
       {...responder.panHandlers}
       style={[
         styles.cell,
-        {left: x, top: y, width: cellWidth, height: cellHeight, zIndex: zIndex as any},
-        {transform: pan.getTranslateTransform()},
+        {left: x, top: y, width: cellWidth, height: cellHeight, zIndex: zIndex as any, opacity},
+        {transform: [...pan.getTranslateTransform(), {scale}]},
       ]}>
       <View style={styles.iconWrap}>
         <AppIconImage app={app} size={52} radius={12} />

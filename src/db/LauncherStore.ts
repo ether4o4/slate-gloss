@@ -19,10 +19,14 @@ export interface LauncherState {
   recents: string[]; // most-recently launched (newest first)
   recycle: RecycleItem[]; // shortcuts sent to the Recycle Bin
   startSize: {width: number; height: number}; // resizable Start menu
+  taskbarColors: string[]; // gradient colors for the taskbar
+  startIcon: string; // custom Start-button image uri ('' = default pearl)
 }
 
 const KEY = '@vista_launcher_state_v1';
 const MAX_RECENTS = 8;
+
+export const DEFAULT_TASKBAR_COLORS = ['rgba(40,73,120,0.78)', 'rgba(15,36,64,0.92)'];
 
 const DEFAULT_STATE: LauncherState = {
   pinned: [],
@@ -30,6 +34,8 @@ const DEFAULT_STATE: LauncherState = {
   recents: [],
   recycle: [],
   startSize: {width: 0, height: 0}, // 0 = use default size
+  taskbarColors: DEFAULT_TASKBAR_COLORS,
+  startIcon: '',
 };
 
 export const loadState = async (): Promise<LauncherState> => {
@@ -132,3 +138,13 @@ export const setStartSize = (
   width: number,
   height: number,
 ): LauncherState => ({...state, startSize: {width, height}});
+
+export const setTaskbarColors = (state: LauncherState, colors: string[]): LauncherState => ({
+  ...state,
+  taskbarColors: colors,
+});
+
+export const setStartIcon = (state: LauncherState, uri: string): LauncherState => ({
+  ...state,
+  startIcon: uri,
+});

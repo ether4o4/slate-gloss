@@ -18,6 +18,7 @@ import {Taskbar} from './src/components/vista/Taskbar';
 import {StartMenu} from './src/components/vista/StartMenu';
 import {SystemFlyout} from './src/components/vista/SystemFlyout';
 import {RecycleBin} from './src/components/vista/RecycleBin';
+import {Personalize} from './src/components/vista/Personalize';
 import SwarmChatWindow from './src/components/SwarmChatWindow';
 import {
   getApps,
@@ -27,6 +28,7 @@ import {
   uninstallApp,
   requestDefaultLauncher,
   chooseWallpaper,
+  pickStartIcon,
   getNotifications,
   isNotificationAccessEnabled,
   openNotificationAccessSettings,
@@ -46,6 +48,8 @@ import {
   restoreFromRecycle,
   emptyRecycle,
   setStartSize,
+  setTaskbarColors,
+  setStartIcon,
   type LauncherState,
 } from './src/db/LauncherStore';
 
@@ -67,6 +71,7 @@ const App: React.FC = () => {
   const [swarmOpen, setSwarmOpen] = useState(false);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [recycleOpen, setRecycleOpen] = useState(false);
+  const [personalizeOpen, setPersonalizeOpen] = useState(false);
 
   const grid = useMemo(() => {
     const win = Dimensions.get('window');
@@ -169,11 +174,17 @@ const App: React.FC = () => {
   );
 
   const changeWallpaper = useCallback(async () => {
-    const ok = await chooseWallpaper();
-    if (!ok) {
-      // user cancelled or failed silently
-    }
+    await chooseWallpaper();
   }, []);
+
+  const pickStart = useCallback(async () => {
+    const uri = await pickStartIcon();
+    if (uri) {
+      update(s => setStartIcon(s, uri));
+    }
+  }, [update]);
+
+  const resetStart = useCallback(() => update(s => setStartIcon(s, '')), [update]);
 
   const pinnedApps = useMemo(
     () => (state?.pinned ?? []).map(p => appsByPkg[p]).filter(Boolean) as AppInfo[],
@@ -209,29 +220,23 @@ const App: React.FC = () => {
           onRecycle={pkg => update(s => recycleDesktopIcon(s, pkg))}
           onOpenRecycle={() => setRecycleOpen(true)}
         />
-
-        {state.desktop.length === 0 && !loading && (
-          <View style={styles.hintWrap} pointerEvents="none">
-            <Text style={styles.hintTitle}>Welcome to Vista</Text>
-            <Text style={styles.hint}>
-              Tap the orb (⊞) to open Start. Long-press an app to pin it or add it
-              to your desktop.
-            </Text>
-          </View>
-        )}
       </View>
 
-      <Taskbar
-        startActive={startOpen}
-        pinned={pinnedApps}
-        onStartPress={() => setStartOpen(v => !v)}
-        onSwarmPress={() => setSwarmOpen(true)}
-        onClockPress={() => {
-          refreshNotifications();
-          setFlyoutOpen(true);
-        }}
-        onLaunch={launch}
-      />
+      <View style={styles.taskbarDock}>
+        <Taskbar
+          startActive={startOpen}
+          pinned={pinnedApps}
+          colors={state.taskbarColors}
+          startIconUri={state.startIcon || undefined}
+          onStartPress={() => setStartOpen(v => !v)}
+          onSwarmPress={() => setSwarmOpen(true)}
+          onClockPress={() => {
+            refreshNotifications();
+            setFlyoutOpen(true);
+          }}
+          onLaunch={launch}
+        />
+      </View>
 
       <StartMenu
         visible={startOpen}
@@ -247,9 +252,9 @@ const App: React.FC = () => {
         }}
         onItemMenu={startItemMenu}
         onResize={(w, h) => update(s => setStartSize(s, w, h))}
-        onChangeWallpaper={() => {
+        onPersonalize={() => {
           setStartOpen(false);
-          changeWallpaper();
+          setPersonalizeOpen(true);
         }}
         onSetDefault={() => {
           setStartOpen(false);
@@ -286,6 +291,17 @@ const App: React.FC = () => {
         onUninstall={pkg => uninstallApp(pkg)}
       />
 
+      <Personalize
+        visible={personalizeOpen}
+        currentColors={state.taskbarColors}
+        startIcon={state.startIcon}
+        onClose={() => setPersonalizeOpen(false)}
+        onPickColors={colors => update(s => setTaskbarColors(s, colors))}
+        onPickStartIcon={pickStart}
+        onResetStartIcon={resetStart}
+        onChangeWallpaper={changeWallpaper}
+      />
+
       <Modal
         visible={swarmOpen}
         animationType="slide"
@@ -299,25 +315,8 @@ const App: React.FC = () => {
 const styles = StyleSheet.create({
   root: {flex: 1, backgroundColor: 'transparent'},
   center: {alignItems: 'center', justifyContent: 'center'},
-  body: {flex: 1, paddingTop: STATUS_BAR},
-  hintWrap: {position: 'absolute', top: '38%', left: 24, right: 160, alignItems: 'flex-start'},
-  hintTitle: {
-    color: Vista.text,
-    fontSize: 26,
-    fontWeight: '800',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 4,
-  },
-  hint: {
-    color: Vista.text,
-    fontSize: 14,
-    lineHeight: 20,
-    textShadowColor: 'rgba(0,0,0,0.7)',
-    textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 3,
-  },
+  body: {flex: 1, paddingTop: STATUS_BAR, paddingBottom: TASKBAR_H},
+  taskbarDock: {position: 'absolute', left: 0, right: 0, bottom: 0},
 });
 
 export default App;

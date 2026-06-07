@@ -27,6 +27,7 @@ import com.facebook.react.bridge.WritableArray
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.facebook.react.bridge.ActivityEventListener
 import java.io.ByteArrayOutputStream
+import java.io.File
 
 /**
  * Native bridge for the Vista launcher: enumerate/launch apps, manage the
@@ -37,6 +38,7 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext), ActivityEventListener {
 
   private var wallpaperPromise: Promise? = null
+  private var imagePromise: Promise? = null
 
   init {
     reactContext.addActivityEventListener(this)
@@ -155,24 +157,67 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
     }
   }
 
+  @ReactMethod
+  fun pickStartIcon(promise: Promise) {
+    val activity = currentActivity
+    if (activity == null) {
+      promise.reject("no_activity", "No current activity")
+      return
+    }
+    imagePromise = promise
+    val pick = Intent(Intent.ACTION_GET_CONTENT).apply {
+      type = "image/*"
+      addCategory(Intent.CATEGORY_OPENABLE)
+    }
+    try {
+      activity.startActivityForResult(Intent.createChooser(pick, "Select start button image"), REQ_IMAGE)
+    } catch (e: Exception) {
+      imagePromise = null
+      promise.reject("picker_failed", e.message, e)
+    }
+  }
+
   override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?) {
-    if (requestCode != REQ_WALLPAPER) return
-    val p = wallpaperPromise
-    wallpaperPromise = null
-    if (resultCode == Activity.RESULT_OK && data?.data != null) {
-      try {
-        val input = reactContext.contentResolver.openInputStream(data.data!!)
-        if (input != null) {
-          input.use { WallpaperManager.getInstance(reactContext).setStream(it) }
-          p?.resolve(true)
+    when (requestCode) {
+      REQ_WALLPAPER -> {
+        val p = wallpaperPromise
+        wallpaperPromise = null
+        if (resultCode == Activity.RESULT_OK && data?.data != null) {
+          try {
+            val input = reactContext.contentResolver.openInputStream(data.data!!)
+            if (input != null) {
+              input.use { WallpaperManager.getInstance(reactContext).setStream(it) }
+              p?.resolve(true)
+            } else {
+              p?.reject("wallpaper_failed", "Could not open the selected image")
+            }
+          } catch (e: Exception) {
+            p?.reject("wallpaper_failed", e.message, e)
+          }
         } else {
-          p?.reject("wallpaper_failed", "Could not open the selected image")
+          p?.resolve(false)
         }
-      } catch (e: Exception) {
-        p?.reject("wallpaper_failed", e.message, e)
       }
-    } else {
-      p?.resolve(false)
+      REQ_IMAGE -> {
+        val p = imagePromise
+        imagePromise = null
+        if (resultCode == Activity.RESULT_OK && data?.data != null) {
+          try {
+            val dst = File(reactContext.filesDir, "start_icon_${System.currentTimeMillis()}.png")
+            val input = reactContext.contentResolver.openInputStream(data.data!!)
+            if (input != null) {
+              input.use { inp -> dst.outputStream().use { out -> inp.copyTo(out) } }
+              p?.resolve("file://${dst.absolutePath}")
+            } else {
+              p?.reject("image_failed", "Could not open the selected image")
+            }
+          } catch (e: Exception) {
+            p?.reject("image_failed", e.message, e)
+          }
+        } else {
+          p?.resolve("")
+        }
+      }
     }
   }
 
@@ -290,6 +335,7 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
   companion object {
     private const val ICON_SIZE_PX = 144
     private const val REQ_WALLPAPER = 42001
+    private const val REQ_IMAGE = 42002
 
     @Volatile private var ctx: ReactApplicationContext? = null
 

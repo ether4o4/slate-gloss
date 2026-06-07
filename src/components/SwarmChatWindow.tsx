@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ActivityIndicator,
   Alert,
@@ -30,7 +30,17 @@ const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
   const [keyConfigured, setKeyConfigured] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [keyDraft, setKeyDraft] = useState('');
+  const [kb, setKb] = useState(0);
   const listRef = useRef<FlatList<StoredMessage>>(null);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', e => setKb(e.endCoordinates.height));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKb(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const refreshKeyStatus = useCallback(() => {
     hasApiKey().then(setKeyConfigured);
@@ -114,9 +124,7 @@ const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient
         colors={['#0d2137', '#102a44', '#0a1a2c']}
         style={StyleSheet.absoluteFill}
@@ -142,6 +150,7 @@ const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
 
       <FlatList
         ref={listRef}
+        style={styles.list}
         data={messages}
         keyExtractor={(item, index) => `${item.timestamp}-${index}`}
         renderItem={({item}) => (
@@ -203,6 +212,9 @@ const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
         </TouchableOpacity>
       </View>
 
+      {/* Spacer that lifts the input above the keyboard (window doesn't resize). */}
+      <View style={{height: kb}} />
+
       {/* API key settings */}
       <Modal
         visible={settingsOpen}
@@ -236,7 +248,7 @@ const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
           </View>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -244,6 +256,7 @@ const hitSlop = {top: 12, bottom: 12, left: 12, right: 12};
 
 const styles = StyleSheet.create({
   container: {flex: 1},
+  list: {flex: 1},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
