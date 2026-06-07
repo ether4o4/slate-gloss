@@ -2,7 +2,6 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   Dimensions,
   FlatList,
-  Keyboard,
   Modal,
   PanResponder,
   Pressable,
@@ -34,11 +33,13 @@ interface Props {
 
 const screen = Dimensions.get('window');
 const DEFAULT_W = Math.min(screen.width - 20, 620);
-const DEFAULT_H = Math.min(Math.round(screen.height * 0.72), 720);
+// Tall by default so the search bar (at the top of the panel) always sits above
+// the soft keyboard — the panel itself never moves, which keeps it rock-steady.
+const DEFAULT_H = Math.min(Math.round(screen.height * 0.82), screen.height - 110);
 const MIN_W = 300;
 const MIN_H = 380;
 const MAX_W = screen.width - 12;
-const MAX_H = screen.height - 110;
+const MAX_H = screen.height - 96;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -75,7 +76,6 @@ export const StartMenu: React.FC<Props> = ({
   onOpenSwarm,
 }) => {
   const [query, setQuery] = useState('');
-  const [kb, setKb] = useState(0);
   const [dims, setDims] = useState({
     w: size.width || DEFAULT_W,
     h: size.height || DEFAULT_H,
@@ -92,16 +92,6 @@ export const StartMenu: React.FC<Props> = ({
       setDims({w: size.width || DEFAULT_W, h: size.height || DEFAULT_H});
     }
   }, [visible, size.width, size.height]);
-
-  // Lift the panel above the soft keyboard (window doesn't resize anymore).
-  useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', e => setKb(e.endCoordinates.height));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKb(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
 
   const resizer = useRef(
     PanResponder.create({
@@ -126,20 +116,9 @@ export const StartMenu: React.FC<Props> = ({
     return q ? apps.filter(a => a.label.toLowerCase().includes(q)) : apps;
   }, [apps, query]);
 
-  // Auto-launch once the search narrows to a single app (after a few letters).
-  // A short debounce means it won't fire mid-burst as you keep typing.
-  const AUTO_MIN_LEN = 3;
-  useEffect(() => {
-    if (!visible) return;
-    const q = query.trim();
-    if (q.length < AUTO_MIN_LEN || filtered.length !== 1) return;
-    const only = filtered[0];
-    const t = setTimeout(() => onLaunch(only.packageName), 350);
-    return () => clearTimeout(t);
-  }, [visible, query, filtered, onLaunch]);
-
-  // Keep the panel above the keyboard with the search bar visible.
-  const renderH = Math.max(260, Math.min(dims.h, screen.height - (72 + kb) - 48));
+  // Stable height (never reacts to the keyboard); the panel is tall enough that
+  // the search bar stays above the keyboard and the list just scrolls underneath.
+  const renderH = Math.max(MIN_H, Math.min(dims.h, MAX_H));
 
   const pinnedApps = pinned.map(p => appsByPkg[p]).filter(Boolean) as AppInfo[];
   const recentApps = recents.map(p => appsByPkg[p]).filter(Boolean) as AppInfo[];
@@ -149,7 +128,7 @@ export const StartMenu: React.FC<Props> = ({
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable
           onPress={() => {}}
-          style={[styles.panelWrap, {width: dims.w, height: renderH, marginBottom: 72 + kb}]}>
+          style={[styles.panelWrap, {width: dims.w, height: renderH, marginBottom: 72}]}>
           <GlassSurface radius={18} style={styles.panel}>
             {/* resize handle (top-right corner) */}
             <View {...resizer.panHandlers} style={styles.resizeHandle}>
@@ -227,6 +206,7 @@ export const StartMenu: React.FC<Props> = ({
                     </View>
                   }
                   showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
                 />
               </View>
             </View>
