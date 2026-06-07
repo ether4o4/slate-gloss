@@ -12,7 +12,9 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-import {Vista} from './src/theme';
+import {Vista, TASKBAR_PRESETS} from './src/theme';
+import {AI_THEMES} from './src/ai/tools';
+import type {ToolExecutor} from './src/api/DeepSeekService';
 import {Desktop} from './src/components/vista/Desktop';
 import {Taskbar} from './src/components/vista/Taskbar';
 import {StartMenu} from './src/components/vista/StartMenu';
@@ -201,6 +203,94 @@ const App: React.FC = () => {
 
   const resetStart = useCallback(() => update(s => setStartIcon(s, '')), [update]);
 
+  // ---- Swarm command sandbox (tool calls) ------------------------------
+
+  const findApp = useCallback(
+    (q: string): AppInfo | undefined => {
+      const s = (q || '').trim().toLowerCase();
+      if (!s) return undefined;
+      return (
+        apps.find(a => a.label.toLowerCase() === s) ||
+        apps.find(a => a.label.toLowerCase().startsWith(s)) ||
+        apps.find(a => a.label.toLowerCase().includes(s)) ||
+        apps.find(a => a.packageName.toLowerCase().includes(s))
+      );
+    },
+    [apps],
+  );
+
+  const allThemes = useMemo(() => [...TASKBAR_PRESETS, ...AI_THEMES], []);
+
+  const executeTool = useCallback<ToolExecutor>(
+    async (name, args) => {
+      switch (name) {
+        case 'list_themes':
+          return allThemes.map(t => t.name).join(', ');
+        case 'apply_theme': {
+          const want = String(args.name || '').toLowerCase();
+          const t =
+            allThemes.find(x => x.name.toLowerCase() === want) ||
+            allThemes.find(x => want && x.name.toLowerCase().includes(want));
+          if (!t) return `No theme "${args.name}". Options: ${allThemes.map(x => x.name).join(', ')}`;
+          update(s => setTaskbarColors(s, t.colors));
+          return `Applied "${t.name}".`;
+        }
+        case 'launch_app': {
+          const a = findApp(String(args.name || ''));
+          if (!a) return `No app matching "${args.name}".`;
+          launch(a.packageName);
+          return `Launched ${a.label}.`;
+        }
+        case 'pin_app': {
+          const a = findApp(String(args.name || ''));
+          if (!a) return `No app matching "${args.name}".`;
+          if (state?.pinned.includes(a.packageName)) return `${a.label} is already pinned.`;
+          update(s => togglePin(s, a.packageName));
+          return `Pinned ${a.label}.`;
+        }
+        case 'add_to_desktop': {
+          const a = findApp(String(args.name || ''));
+          if (!a) return `No app matching "${args.name}".`;
+          update(s => addToDesktop(s, a.packageName, grid.cols, grid.rows));
+          return `Added ${a.label} to the desktop.`;
+        }
+        case 'toggle_widget': {
+          const id = String(args.id || '').toLowerCase();
+          const valid = ['calendar', 'notifications', 'weather', 'battery', 'system', 'notes'];
+          if (!valid.includes(id)) return `Unknown widget "${args.id}". Valid: ${valid.join(', ')}`;
+          const willEnable = !state?.widgets.includes(id);
+          update(s => toggleWidget(s, id));
+          return `${willEnable ? 'Enabled' : 'Disabled'} the ${id} widget.`;
+        }
+        case 'open_wallpaper_picker':
+          changeWallpaper();
+          return 'Opened the wallpaper picker.';
+        case 'open_start_icon_picker':
+          pickStart();
+          return 'Opened the image picker for the Start button.';
+        case 'set_default_launcher':
+          requestDefaultLauncher();
+          return 'Prompted to set Vista as the default launcher.';
+        case 'get_status': {
+          const [b, sys] = await Promise.all([getBatteryInfo(), getSystemInfo()]);
+          const now = new Date();
+          const parts = [
+            `Time ${now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`,
+            `Battery ${b.level}%${b.charging ? ' charging' : ''}`,
+            apps.length ? `${apps.length} apps installed` : '',
+          ];
+          if (sys) {
+            parts.push(`RAM ${sys.ramUsedPct}% used`, `Storage ${sys.storageUsedPct}% used`);
+          }
+          return parts.filter(Boolean).join(' · ');
+        }
+        default:
+          return `Unknown command: ${name}`;
+      }
+    },
+    [allThemes, findApp, update, launch, state, grid, changeWallpaper, pickStart, apps],
+  );
+
   const pinnedApps = useMemo(
     () => (state?.pinned ?? []).map(p => appsByPkg[p]).filter(Boolean) as AppInfo[],
     [state, appsByPkg],
@@ -329,7 +419,7 @@ const App: React.FC = () => {
         visible={swarmOpen}
         animationType="slide"
         onRequestClose={() => setSwarmOpen(false)}>
-        <SwarmChatWindow onClose={() => setSwarmOpen(false)} />
+        <SwarmChatWindow onClose={() => setSwarmOpen(false)} executeTool={executeTool} />
       </Modal>
     </View>
   );

@@ -13,7 +13,7 @@ import {
   Modal,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {sendMessageToDeepSeek} from '../api/DeepSeekService';
+import {sendSwarm, type ToolExecutor, type ToolCallRecord} from '../api/DeepSeekService';
 import {
   getMessages,
   appendMessage,
@@ -23,7 +23,21 @@ import {
 import {getApiKey, setApiKey, hasApiKey} from '../db/Settings';
 import {PROVIDER_NAME, PROVIDER_KEY_URL} from '../config';
 
-const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
+const formatCmd = (c: ToolCallRecord): string => {
+  const args = Object.entries(c.args || {})
+    .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+    .join(', ');
+  const result = c.result.length > 80 ? `${c.result.slice(0, 80)}…` : c.result;
+  return `▸ ${c.name}(${args}) → ${result}`;
+};
+
+const SwarmChatWindow = ({
+  onClose,
+  executeTool,
+}: {
+  onClose: () => void;
+  executeTool: ToolExecutor;
+}) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<StoredMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,15 +99,21 @@ const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
     scrollToEnd();
 
     try {
-      const reply = await sendMessageToDeepSeek(
-        afterUser.map(({role, content}) => ({role, content})),
-      );
-      const afterAssistant = await appendMessage(
-        afterUser,
-        'assistant',
-        reply.content,
-      );
-      setMessages(afterAssistant);
+      const apiHistory = afterUser
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map(m => ({role: m.role as 'user' | 'assistant', content: m.content}));
+      const {content, calls} = await sendSwarm(apiHistory, executeTool);
+
+      let list = afterUser;
+      for (const c of calls) {
+        list = await appendMessage(list, 'cmd', formatCmd(c));
+      }
+      if (content) {
+        list = await appendMessage(list, 'assistant', content);
+      } else if (calls.length === 0) {
+        list = await appendMessage(list, 'assistant', '…');
+      }
+      setMessages(list);
       scrollToEnd();
     } catch (error: any) {
       const msg = error?.message ?? 'Something went wrong. Please try again.';
@@ -153,27 +173,38 @@ const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
         style={styles.list}
         data={messages}
         keyExtractor={(item, index) => `${item.timestamp}-${index}`}
-        renderItem={({item}) => (
-          <View
-            style={[
-              styles.messageRow,
-              item.role === 'user' ? styles.rowUser : styles.rowAi,
-            ]}>
+        renderItem={({item}) => {
+          if (item.role === 'cmd') {
+            return (
+              <View style={styles.cmdRow}>
+                <Text style={styles.cmdText}>{item.content}</Text>
+              </View>
+            );
+          }
+          return (
             <View
               style={[
-                styles.messageBubble,
-                item.role === 'user' ? styles.userBubble : styles.aiBubble,
+                styles.messageRow,
+                item.role === 'user' ? styles.rowUser : styles.rowAi,
               ]}>
-              <Text style={styles.messageText}>{item.content}</Text>
+              <View
+                style={[
+                  styles.messageBubble,
+                  item.role === 'user' ? styles.userBubble : styles.aiBubble,
+                ]}>
+                <Text style={styles.messageText}>{item.content}</Text>
+              </View>
             </View>
-          </View>
-        )}
+          );
+        }}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>Ask Swarm anything</Text>
             <Text style={styles.emptySubtitle}>
-              Powered by {PROVIDER_NAME}. Your chat is saved on this device.
+              Powered by {PROVIDER_NAME}. Swarm can run launcher commands — try
+              “make the taskbar matrix green”, “open the camera”, or “give me a
+              secret theme”.
             </Text>
             {!keyConfigured && (
               <TouchableOpacity style={styles.ctaButton} onPress={openSettings}>
@@ -287,6 +318,16 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   messageText: {color: '#fff', fontSize: 15, lineHeight: 21},
+  cmdRow: {
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4ade80',
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  cmdText: {color: '#9be8b0', fontSize: 12.5, fontFamily: Platform.OS === 'android' ? 'monospace' : 'Menlo'},
   empty: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32},
   emptyTitle: {color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 8},
   emptySubtitle: {color: '#9fb4c9', fontSize: 13, textAlign: 'center', lineHeight: 19},

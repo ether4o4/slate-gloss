@@ -1,9 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type {ChatMessage} from '../api/DeepSeekService';
 
 const STORAGE_KEY = '@vista_swarm_chat_history';
 
-export interface StoredMessage extends ChatMessage {
+/** 'cmd' is a launcher command Swarm ran (shown like a terminal line). */
+export type StoredRole = 'user' | 'assistant' | 'cmd';
+
+export interface StoredMessage {
+  role: StoredRole;
+  content: string;
   timestamp: number;
 }
 
@@ -39,7 +43,7 @@ export const saveMessages = async (
 /** Appends a single message and persists, returning the updated list. */
 export const appendMessage = async (
   current: StoredMessage[],
-  role: ChatMessage['role'],
+  role: StoredRole,
   content: string,
 ): Promise<StoredMessage[]> => {
   const next = [...current, {role, content, timestamp: Date.now()}];
