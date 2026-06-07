@@ -35,15 +35,19 @@ same URL, so it stays current automatically.
 - **Desktop** with **placeable, draggable icons** and an **operational Recycle
   Bin** (drag an icon onto it; restore / empty / uninstall).
 - **Two-pane Start menu** (resizable) — scrollable programs on the left,
-  **Pinned + Recent** on the right, with search.
-- **Gadgets** — clock + battery, Vista-sidebar style.
-- **Taskbar** with Start orb, pinned quick-launch, and a clock that opens a
-  **calendar + notifications** flyout.
+  **Pinned + Recent** on the right, with search and type-to-launch.
+- **Widget panel** in the taskbar-clock flyout, with a picker to toggle:
+  **calendar, notifications, weather, battery, system (RAM/storage), notes**.
+- **Taskbar** with Start orb, pinned quick-launch, and a clock that opens the
+  widget/notification flyout. **Customizable taskbar colors** + **custom Start
+  button image** via the Personalize panel.
 - **Changeable wallpaper** (system wallpaper picker).
-- **Swarm AI** reachable from the taskbar / Start menu, on-device chat history,
-  pluggable OpenAI-compatible provider (free **Groq** by default).
+- **Swarm AI** — reachable from the taskbar / Start menu, on-device history,
+  pluggable OpenAI-compatible provider (free **Groq** by default). It's
+  **agentic**: it can run launcher commands (apply themes, open/pin apps, toggle
+  widgets, change wallpaper, report status) and unlock **secret AI-only themes**.
 - Native Kotlin bridge for app list/launch, battery, wallpaper, default-launcher
-  role, and notification mirroring — no third-party native dependency.
+  role, system info, and notification mirroring — no third-party native dependency.
 
 ### Built for low battery / heat
 The “glass” is **translucent gradients + a static sheen**, not per-frame blur,
@@ -74,9 +78,10 @@ NeverSoft-OS/
 ├── src/
 │   ├── components/
 │   │   ├── SwarmChatWindow.tsx
-│   │   └── vista/                 # Taskbar, StartOrb, StartMenu, AppGrid, …
-│   ├── api/DeepSeekService.ts
-│   ├── db/{ChatPersistence,Settings}.ts
+│   │   └── vista/                 # Taskbar, StartOrb, StartMenu, Desktop, Personalize, …
+│   ├── api/{DeepSeekService,Weather}.ts
+│   ├── ai/tools.ts                # Swarm command sandbox + secret themes
+│   ├── db/{ChatPersistence,Settings,LauncherStore}.ts
 │   ├── native/Launcher.ts
 │   ├── config.ts
 │   └── theme.ts
@@ -115,10 +120,10 @@ wire the signing secrets; see `docs/ANDROID_BUILD_SETUP.md`.
 ---
 
 ## 🔒 Security note
-The DeepSeek API key is **not** stored in source control. You enter it in-app and
-it is saved on-device only. Anything bundled into an APK can be extracted by
-decompiling it, so for a public release route requests through a backend proxy
-rather than shipping a key on-device.
+The AI provider API key (Groq by default) is **not** stored in source control.
+You enter it in-app and it is saved on-device only. Anything bundled into an APK
+can be extracted by decompiling it, so for a public release route requests
+through a backend proxy rather than shipping a key on-device.
 
 ---
 
