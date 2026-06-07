@@ -10,7 +10,7 @@ built-in AI assistant (free Groq by default).
 
 **Rolling link (always the newest build):**
 
-➡️ **https://github.com/ether4o4/slate-gloss/releases/latest/download/vista-launcher.apk**
+➡️ **https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk**
 
 > Public repo — the link downloads directly on any device, no login required.
 
@@ -64,7 +64,7 @@ minute.
 ## 📁 Project structure
 
 ```
-slate-gloss/
+NeverSoft-OS/
 ├── android/                      # Android native project (RN 0.73 template)
 │   └── app/src/main/java/com/vistalauncher/
 │       ├── MainActivity.kt
@@ -124,7 +124,7 @@ rather than shipping a key on-device.
 
 ## ⬇️ APK download (rolling, always latest)
 
-**https://github.com/ether4o4/slate-gloss/releases/latest/download/vista-launcher.apk**
+**https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk**
 
 _Updated automatically on every build. Public repo → downloads on any device,
 no login._
