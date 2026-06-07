@@ -21,7 +21,19 @@ export interface LauncherState {
   startSize: {width: number; height: number}; // resizable Start menu
   taskbarColors: string[]; // gradient colors for the taskbar
   startIcon: string; // custom Start-button image uri ('' = default pearl)
+  widgets: string[]; // enabled widgets in the calendar/notification panel
+  notes: string; // contents of the notes widget
 }
+
+/** All widgets available in the calendar/notification panel. */
+export const WIDGET_CATALOG: {id: string; name: string}[] = [
+  {id: 'calendar', name: 'Calendar'},
+  {id: 'notifications', name: 'Notifications'},
+  {id: 'weather', name: 'Weather'},
+  {id: 'battery', name: 'Battery'},
+  {id: 'system', name: 'System'},
+  {id: 'notes', name: 'Notes'},
+];
 
 const KEY = '@vista_launcher_state_v1';
 const MAX_RECENTS = 8;
@@ -36,6 +48,8 @@ const DEFAULT_STATE: LauncherState = {
   startSize: {width: 0, height: 0}, // 0 = use default size
   taskbarColors: DEFAULT_TASKBAR_COLORS,
   startIcon: '',
+  widgets: ['calendar', 'notifications', 'weather', 'battery'],
+  notes: '',
 };
 
 export const loadState = async (): Promise<LauncherState> => {
@@ -147,4 +161,16 @@ export const setTaskbarColors = (state: LauncherState, colors: string[]): Launch
 export const setStartIcon = (state: LauncherState, uri: string): LauncherState => ({
   ...state,
   startIcon: uri,
+});
+
+export const toggleWidget = (state: LauncherState, id: string): LauncherState => ({
+  ...state,
+  widgets: state.widgets.includes(id)
+    ? state.widgets.filter(w => w !== id)
+    : [...state.widgets, id],
+});
+
+export const setNotes = (state: LauncherState, notes: string): LauncherState => ({
+  ...state,
+  notes,
 });

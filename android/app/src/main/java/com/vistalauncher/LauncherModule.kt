@@ -1,6 +1,7 @@
 package com.vistalauncher
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.WallpaperManager
 import android.app.role.RoleManager
 import android.content.Context
@@ -15,6 +16,8 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
+import android.os.Environment
+import android.os.StatFs
 import android.provider.Settings
 import android.util.Base64
 import androidx.core.app.NotificationManagerCompat
@@ -244,8 +247,39 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
     }
   }
 
-  // ---- Notifications ----------------------------------------------------
+  // ---- System info (RAM / storage) -------------------------------------
 
+  @ReactMethod
+  fun getSystemInfo(promise: Promise) {
+    try {
+      val am = reactContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+      val mi = ActivityManager.MemoryInfo()
+      am.getMemoryInfo(mi)
+      val totalMem = mi.totalMem
+      val availMem = mi.availMem
+      val ramUsedPct = if (totalMem > 0) (((totalMem - availMem) * 100) / totalMem).toInt() else 0
+
+      val stat = StatFs(Environment.getDataDirectory().path)
+      val totalBytes = stat.totalBytes
+      val freeBytes = stat.availableBytes
+      val storageUsedPct =
+          if (totalBytes > 0) (((totalBytes - freeBytes) * 100) / totalBytes).toInt() else 0
+
+      val gb = 1024.0 * 1024.0 * 1024.0
+      val map = Arguments.createMap()
+      map.putInt("ramUsedPct", ramUsedPct)
+      map.putDouble("ramTotalGb", totalMem / gb)
+      map.putDouble("ramUsedGb", (totalMem - availMem) / gb)
+      map.putInt("storageUsedPct", storageUsedPct)
+      map.putDouble("storageTotalGb", totalBytes / gb)
+      map.putDouble("storageFreeGb", freeBytes / gb)
+      promise.resolve(map)
+    } catch (e: Exception) {
+      promise.reject("system_info_failed", e.message, e)
+    }
+  }
+
+  // ---- Notifications ----------------------------------------------------
   @ReactMethod
   fun isNotificationAccessEnabled(promise: Promise) {
     val enabled =

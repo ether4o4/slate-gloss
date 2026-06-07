@@ -29,6 +29,8 @@ import {
   requestDefaultLauncher,
   chooseWallpaper,
   pickStartIcon,
+  getBatteryInfo,
+  getSystemInfo,
   getNotifications,
   isNotificationAccessEnabled,
   openNotificationAccessSettings,
@@ -36,7 +38,10 @@ import {
   onNotificationsChanged,
   type AppInfo,
   type NotificationInfo,
+  type BatteryInfo,
+  type SystemInfo,
 } from './src/native/Launcher';
+import {getWeather, type Weather} from './src/api/Weather';
 import {
   loadState,
   saveState,
@@ -50,6 +55,8 @@ import {
   setStartSize,
   setTaskbarColors,
   setStartIcon,
+  toggleWidget,
+  setNotes,
   type LauncherState,
 } from './src/db/LauncherStore';
 
@@ -57,7 +64,6 @@ const STATUS_BAR = StatusBar.currentHeight ?? 0;
 const TASKBAR_H = 64;
 const CELL_W = 84;
 const CELL_H = 96;
-const GADGET_RESERVE = 150;
 
 const App: React.FC = () => {
   const [apps, setApps] = useState<AppInfo[]>([]);
@@ -66,6 +72,9 @@ const App: React.FC = () => {
   const [isDefault, setIsDefault] = useState(false);
   const [notifications, setNotifications] = useState<NotificationInfo[]>([]);
   const [notifAccess, setNotifAccess] = useState(false);
+  const [battery, setBattery] = useState<BatteryInfo>({level: 0, charging: false});
+  const [system, setSystem] = useState<SystemInfo | null>(null);
+  const [weather, setWeather] = useState<Weather | null>(null);
 
   const [startOpen, setStartOpen] = useState(false);
   const [swarmOpen, setSwarmOpen] = useState(false);
@@ -75,7 +84,7 @@ const App: React.FC = () => {
 
   const grid = useMemo(() => {
     const win = Dimensions.get('window');
-    const usableW = win.width - GADGET_RESERVE - 8;
+    const usableW = win.width - 12;
     const usableH = win.height - STATUS_BAR - TASKBAR_H - 16;
     const cols = Math.max(2, Math.floor(usableW / CELL_W));
     const rows = Math.max(3, Math.floor(usableH / CELL_H) - 1);
@@ -100,6 +109,12 @@ const App: React.FC = () => {
     const access = await isNotificationAccessEnabled();
     setNotifAccess(access);
     setNotifications(access ? await getNotifications() : []);
+  }, []);
+
+  const refreshWidgets = useCallback(async () => {
+    getBatteryInfo().then(setBattery);
+    getSystemInfo().then(setSystem);
+    getWeather().then(setWeather);
   }, []);
 
   useEffect(() => {
@@ -232,6 +247,7 @@ const App: React.FC = () => {
           onSwarmPress={() => setSwarmOpen(true)}
           onClockPress={() => {
             refreshNotifications();
+            refreshWidgets();
             setFlyoutOpen(true);
           }}
           onLaunch={launch}
@@ -268,9 +284,16 @@ const App: React.FC = () => {
 
       <SystemFlyout
         visible={flyoutOpen}
+        enabledWidgets={state.widgets}
         notifications={notifications}
         notifAccess={notifAccess}
+        battery={battery}
+        weather={weather}
+        system={system}
+        notes={state.notes}
         onClose={() => setFlyoutOpen(false)}
+        onToggleWidget={id => update(s => toggleWidget(s, id))}
+        onNotesChange={text => update(s => setNotes(s, text))}
         onGrantAccess={() => {
           setFlyoutOpen(false);
           openNotificationAccessSettings();

@@ -3,7 +3,6 @@ import {Pressable, StyleSheet, Text, View} from 'react-native';
 import type {AppInfo} from '../../native/Launcher';
 import type {DesktopIcon as DesktopIconModel} from '../../db/LauncherStore';
 import {DesktopIcon} from './DesktopIcon';
-import {GadgetSidebar} from './Gadgets';
 import {Vista} from '../../theme';
 
 interface Rect {
@@ -98,8 +97,6 @@ export const Desktop: React.FC<Props> = ({
           />
         );
       })}
-
-      <GadgetSidebar />
 
       {/* Recycle Bin (drop target + opens the bin) */}
       <View ref={binRef} onLayout={measure} style={styles.binWrap}>

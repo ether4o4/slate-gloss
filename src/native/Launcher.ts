@@ -21,6 +21,15 @@ export interface NotificationInfo {
   time: number;
 }
 
+export interface SystemInfo {
+  ramUsedPct: number;
+  ramTotalGb: number;
+  ramUsedGb: number;
+  storageUsedPct: number;
+  storageTotalGb: number;
+  storageFreeGb: number;
+}
+
 interface LauncherNativeModule {
   getApps(): Promise<AppInfo[]>;
   launchApp(packageName: string): Promise<boolean>;
@@ -30,6 +39,7 @@ interface LauncherNativeModule {
   requestDefaultLauncher(): void;
   chooseWallpaper(): Promise<boolean>;
   getBatteryInfo(): Promise<BatteryInfo>;
+  getSystemInfo(): Promise<SystemInfo>;
   isNotificationAccessEnabled(): Promise<boolean>;
   openNotificationAccessSettings(): void;
   getNotifications(): Promise<NotificationInfo[]>;
@@ -100,6 +110,15 @@ export const getBatteryInfo = async (): Promise<BatteryInfo> => {
     return await native.getBatteryInfo();
   } catch {
     return {level: 0, charging: false};
+  }
+};
+
+export const getSystemInfo = async (): Promise<SystemInfo | null> => {
+  if (!native) return null;
+  try {
+    return await native.getSystemInfo();
+  } catch {
+    return null;
   }
 };
 
