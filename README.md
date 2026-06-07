@@ -1,164 +1,129 @@
-# Vista Launcher - Windows Aero for Android
+# Vista Launcher — Windows Aero for Android
 
-## 🎉 Project Complete!
+A glossy Windows Vista–style **home-screen launcher** for Android, built with
+React Native. A wallpaper desktop with placeable icons, an operational Recycle
+Bin, gadgets, a two-pane Start menu, a taskbar with a calendar/notification
+flyout, and **Swarm** — a built-in AI assistant (free Groq by default).
 
-A fully functional Windows Vista Aero-inspired Android launcher built with React Native.
+## 📥 Download the APK
 
-### ✅ What's Included
+**Rolling link (always the newest build):**
 
-#### Core Components (`src/components/glass/`)
-| Component | Description |
-|-----------|-------------|
-| **GlassPanel** | Translucent panel with blur, inner glow, border highlights |
-| **GlassButton** | Glass button with hover/active states |
-| **StartOrb** | Iconic Vista start button with pulse animation |
-| **WindowFrame** | Draggable window with glass title bar |
-| **Taskbar** | Vista-style taskbar with glass effect |
-| **shaders.ts** | Skia shaders for blur, noise, chromatic aberration |
+➡️ **https://github.com/ether4o4/slate-gloss/releases/latest/download/vista-launcher.apk**
 
-#### Animations (`src/animations/`)
-| Hook | Purpose |
-|------|---------|
-| **useStartMenuAnimation** | Start menu open/close with spring physics |
-| **useDragPhysics** | Window dragging with momentum |
-| **useGlassShimmer** | Subtle light reflection on glass |
-| **useButtonHover** | Scale + glow on button hover |
-| **useTaskbarBounce** | Notification bounce animation |
-| **SharedTransitions** | Element-to-element transitions |
+> Public repo — the link downloads directly on any device, no login required.
 
-#### Features
-- ✅ Desktop with draggable icons
-- ✅ Start menu with glass animation
-- ✅ Draggable windows (open multiple!)
-- ✅ Vista Aurora gradient background
-- ✅ 120fps smooth animations
-- ✅ Real glassmorphism with Skia shaders
+Every push to `main` / `claude/**` rebuilds the APK and republishes it to that
+same URL, so it stays current automatically.
+
+### Install
+1. Open the link above on your Android phone and download the APK.
+2. Tap it and allow **“install from unknown sources.”**
+3. Open the app, then **Start ▸ “Set as default launcher”** to use it as home.
+4. For Swarm AI, tap **⚙** in the Swarm panel and paste a **free Groq API key**
+   (console.groq.com/keys) — stored only on your device, never committed.
+5. Optional: grant **Notification access** (from the taskbar clock popup) to
+   mirror notifications, and pick a **wallpaper** from Start ▸ Wallpaper.
 
 ---
 
-## 🚀 How to Build
+## ✨ Features
 
-### Option 1: GitHub Actions (Easiest)
+- **Real home-screen launcher** — registers the `HOME` intent, requests the
+  default-home role, and lets your wallpaper show through.
+- **Desktop** with **placeable, draggable icons** and an **operational Recycle
+  Bin** (drag an icon onto it; restore / empty / uninstall).
+- **Two-pane Start menu** (resizable) — scrollable programs on the left,
+  **Pinned + Recent** on the right, with search.
+- **Gadgets** — clock + battery, Vista-sidebar style.
+- **Taskbar** with Start orb, pinned quick-launch, and a clock that opens a
+  **calendar + notifications** flyout.
+- **Changeable wallpaper** (system wallpaper picker).
+- **Swarm AI** reachable from the taskbar / Start menu, on-device chat history,
+  pluggable OpenAI-compatible provider (free **Groq** by default).
+- Native Kotlin bridge for app list/launch, battery, wallpaper, default-launcher
+  role, and notification mirroring — no third-party native dependency.
 
-1. **Push to GitHub:**
-   ```bash
-   cd /root/.openclaw/workspace/vista-launcher
-   git init
-   git add .
-   git commit -m "Vista Launcher v1.0"
-   git remote add origin https://github.com/YOUR_USERNAME/vista-launcher.git
-   git push -u origin main
-   ```
-
-2. **GitHub auto-builds the APK** (~5-10 minutes)
-
-3. **Download from Actions tab** or Releases
-
-### Option 2: Local Build
-
-**Prerequisites:**
-- Android Studio (SDK Platform 34, Build Tools 34.0.0)
-- Java 17 JDK
-- Node.js 18+
-
-**Build:**
-```bash
-cd /root/.openclaw/workspace/vista-launcher
-npm install
-./build-apk.sh release
-```
-
-APK will be in: `android/app/build/outputs/apk/release/`
+### Built for low battery / heat
+The “glass” is **translucent gradients + a static sheen**, not per-frame blur,
+so there’s no continuous GPU cost. Animations use the **native driver** and only
+fire on interaction; nothing animates while idle, and the clock ticks once a
+minute.
 
 ---
 
-## 📁 Project Structure
+## 🧱 Tech stack
+
+- React Native **0.73** (old architecture — chosen for build reliability)
+- `react-native-linear-gradient` for the gloss
+- `@react-native-async-storage/async-storage` for layout, history, API key
+- `axios` for the OpenAI-compatible chat API
+- Kotlin `LauncherModule` + `NotificationService` for native launcher features
+
+## 📁 Project structure
 
 ```
-vista-launcher/
-├── android/           # Android native code
-├── ios/              # iOS native code
+slate-gloss/
+├── android/                      # Android native project (RN 0.73 template)
+│   └── app/src/main/java/com/vistalauncher/
+│       ├── MainActivity.kt
+│       ├── MainApplication.kt
+│       ├── LauncherModule.kt      # list/launch apps, default-launcher control
+│       └── LauncherPackage.kt
 ├── src/
 │   ├── components/
-│   │   └── glass/    # Aero glass components
-│   ├── animations/   # Reanimated hooks
-│   ├── screens/      # Screen layouts
-│   └── assets/       # Images, fonts
-├── docs/             # Documentation
-├── .github/
-│   └── workflows/
-│       └── build-apk.yml  # CI/CD pipeline
-├── App.tsx           # Main app entry
-└── build-apk.sh      # Local build script
+│   │   ├── SwarmChatWindow.tsx
+│   │   └── vista/                 # Taskbar, StartOrb, StartMenu, AppGrid, …
+│   ├── api/DeepSeekService.ts
+│   ├── db/{ChatPersistence,Settings}.ts
+│   ├── native/Launcher.ts
+│   ├── config.ts
+│   └── theme.ts
+├── App.tsx
+└── .github/workflows/build-apk.yml
 ```
 
 ---
 
-## 🎨 Customization
+## 🛠 Building
 
-### Colors
-Edit `src/components/glass/shaders.ts` to change:
-- Glass tint color
-- Border highlights
-- Shadow colors
+### GitHub Actions (recommended)
+Push to `main` or any `claude/**` branch. CI builds the APK and republishes it to
+the rolling release URL above (it also uploads a `vista-launcher-apk` artifact on
+every run, including PRs).
 
-### Wallpaper
-Replace the gradient in `App.tsx`:
-```tsx
-<LinearGradient colors={['#2c5aa0', '#1a3a5c']} ... />
-```
+### Local build
+**Prerequisites:** Android SDK (Platform 34, Build Tools 34.0.0), Java 17,
+Node 18+.
 
-### Icons
-Add your own icons to the desktop:
-```tsx
-<DesktopIcon label="My App" icon="🔥" onPress={...} />
-```
-
----
-
-## 🔧 GitHub Actions Secrets (Optional)
-
-For signed release builds, add to GitHub repo:
-
-1. `RELEASE_KEYSTORE_BASE64` - Base64-encoded keystore
-2. `KEYSTORE_PASSWORD` - Keystore password
-3. `KEY_ALIAS` - Key alias
-4. `KEY_PASSWORD` - Key password
-
-Generate keystore:
 ```bash
-keytool -genkey -v -keystore release.keystore -alias vistakey -keyalg RSA -keysize 2048 -validity 10000
-base64 -i release.keystore | pbcopy
+npm install
+cd android && ./gradlew assembleRelease
+# APK: android/app/build/outputs/apk/release/app-release.apk
 ```
 
----
+> Use `assembleRelease` for a **standalone** APK — it bundles the JS into the
+> app. A plain `assembleDebug` build expects a running Metro dev server and will
+> show “Unable to load script” if installed on its own.
 
-## 📱 Installing the APK
-
-1. Download the APK from GitHub Actions
-2. Transfer to Android device
-3. Enable "Install from Unknown Sources"
-4. Install and enjoy your Vista desktop!
-
----
-
-## 🐛 Known Issues
-
-- Some shaders may not work on older Android devices
-- Drag physics could be smoother (tune spring configs)
-- Window z-index stacking needs improvement
+### Signing
+CI publishes a **release** build signed with the standard debug keystore, so it
+installs on any device. For a Play-ready upload, swap in your own keystore and
+wire the signing secrets; see `docs/ANDROID_BUILD_SETUP.md`.
 
 ---
 
-## 📝 Next Steps
-
-Want to add more features?
-- Widgets (clock, weather, RAM monitor)
-- App drawer with search
-- File manager integration
-- Live wallpapers
-- Icon packs support
+## 🔒 Security note
+The DeepSeek API key is **not** stored in source control. You enter it in-app and
+it is saved on-device only. Anything bundled into an APK can be extracted by
+decompiling it, so for a public release route requests through a backend proxy
+rather than shipping a key on-device.
 
 ---
 
-**Built with ❤️ using React Native + Skia + Reanimated**
+## ⬇️ APK download (rolling, always latest)
+
+**https://github.com/ether4o4/slate-gloss/releases/latest/download/vista-launcher.apk**
+
+_Updated automatically on every build. Public repo → downloads on any device,
+no login._
