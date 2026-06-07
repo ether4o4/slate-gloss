@@ -3,11 +3,20 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 react {
-    autolinkLibrariesWithApp()
+    /* Folders */
+    //   The root of your project, i.e. where "package.json" lives. Default is '..'
+    // root = file("../")
 }
 
-def enableProguardInReleaseBuilds = true
+/**
+ * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
+ * Kept off so release builds succeed out-of-the-box without extra ProGuard tuning.
+ */
+def enableProguardInReleaseBuilds = false
 
+/**
+ * The preferred build flavor of JavaScriptCore (JSC).
+ */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
@@ -23,7 +32,6 @@ android {
         versionCode 1
         versionName "1.0"
     }
-
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -31,49 +39,25 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-        release {
-            storeFile file('release.keystore')
-            storePassword System.getenv("VISTA_KEYSTORE_PASSWORD") ?: 'vistalauncher'
-            keyAlias System.getenv("VISTA_KEY_ALIAS") ?: 'vistalauncher'
-            keyPassword System.getenv("VISTA_KEY_PASSWORD") ?: 'vistalauncher'
-        }
     }
-
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.release
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            // Falls back to the debug keystore so CI can produce an installable APK
+            // without requiring signing secrets.
+            signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-            shrinkResources true
-            zipAlignEnabled true
-        }
-    }
-
-    // Split APKs by ABI for smaller download sizes
-    splits {
-        abi {
-            enable true
-            reset()
-            include 'arm64-v8a', 'armeabi-v7a'
-            universalApk false  // Set to true if you want a universal APK as well
-        }
-    }
-
-    // Rename APKs with version info
-    applicationVariants.all { variant ->
-        variant.outputs.each { output ->
-            def versionName = variant.versionName
-            def versionCode = variant.versionCode
-            def abi = output.getFilter(com.android.build.OutputFile.ABI) ?: "universal"
-            output.outputFileName = "vistalauncher-v${versionName}-${versionCode}-${abi}.apk"
         }
     }
 }
 
 dependencies {
+    // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
     if (hermesEnabled.toBoolean()) {
@@ -82,3 +66,5 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)

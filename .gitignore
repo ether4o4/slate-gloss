@@ -41,6 +41,9 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
+# local secrets (optional baked-in API key) — never commit
+src/secrets.ts
+
 # fastlane
 #
 # It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
