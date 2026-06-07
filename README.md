@@ -1,10 +1,10 @@
-# NeverSoft Services — Windows Vista-style Android launcher
+# NeverSoft OS
 
-A glossy Windows Vista–style **home-screen launcher** for Android by
-**NeverSoft Services**, built with React Native. A wallpaper desktop with
-placeable icons, an operational Recycle Bin, gadgets, a two-pane Start menu, a
-taskbar with a calendar/notification flyout, and **Swarm** — a built-in AI
-assistant (free Groq by default).
+**NeverSoft OS** (NSOS) — a glossy Windows Vista–style **home-screen launcher**
+for Android by **NeverSoft Services**, built with React Native. A wallpaper
+desktop with placeable icons, an operational Recycle Bin, gadgets, a two-pane
+Start menu, a taskbar with a calendar/notification flyout, and **Swarm** — a
+built-in AI assistant (free Groq by default).
 
 ## 📥 Download the APK
 

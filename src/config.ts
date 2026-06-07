@@ -28,6 +28,6 @@ export const DEFAULT_API_KEY = bakedKey;
 
 // Personality / behaviour of the assistant.
 export const SYSTEM_PROMPT =
-  'You are Swarm, a fast and helpful AI assistant built into NeverSoft Services, ' +
-  'a Windows Vista-style Android launcher. Keep answers clear and concise unless ' +
+  'You are Swarm, a fast and helpful AI assistant built into NeverSoft OS, a ' +
+  'Windows Vista-style Android launcher. Keep answers clear and concise unless ' +
   'asked to elaborate.';
