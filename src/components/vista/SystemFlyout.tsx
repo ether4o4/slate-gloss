@@ -1,6 +1,6 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {
-  Keyboard,
+  Dimensions,
   Modal,
   Pressable,
   ScrollView,
@@ -15,6 +15,8 @@ import {describeWeather} from '../../api/Weather';
 import {WIDGET_CATALOG} from '../../db/LauncherStore';
 import {GlassSurface} from './GlassSurface';
 import {Vista} from '../../theme';
+
+const SCROLL_MAX = Math.round(Dimensions.get('window').height * 0.52);
 
 interface Props {
   visible: boolean;
@@ -68,16 +70,8 @@ export const SystemFlyout: React.FC<Props> = ({
   const today = new Date();
   const [view, setView] = useState({y: today.getFullYear(), m: today.getMonth()});
   const [picker, setPicker] = useState(false);
-  const [kb, setKb] = useState(0);
-
-  useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', e => setKb(e.endCoordinates.height));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKb(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
+  const [notesEditor, setNotesEditor] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(notes);
 
   const cells = useMemo(() => buildMonth(view.y, view.m), [view]);
   const monthName = new Date(view.y, view.m, 1).toLocaleDateString([], {month: 'long', year: 'numeric'});
@@ -91,9 +85,10 @@ export const SystemFlyout: React.FC<Props> = ({
   const batColor = battery.level <= 15 ? '#e2574c' : battery.level <= 35 ? '#e2a14c' : '#4ade80';
 
   return (
+    <>
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable onPress={() => {}} style={[styles.wrap, {marginBottom: 72 + kb}]}>
+        <Pressable onPress={() => {}} style={styles.wrap}>
           <GlassSurface radius={18} style={styles.panel}>
             {/* Always-on clock header */}
             <Text style={styles.bigTime}>
@@ -194,14 +189,17 @@ export const SystemFlyout: React.FC<Props> = ({
               {has('notes') && (
                 <View style={styles.card}>
                   <Text style={styles.cardTitle}>Notes</Text>
-                  <TextInput
-                    style={styles.notes}
-                    value={notes}
-                    onChangeText={onNotesChange}
-                    placeholder="Jot something down…"
-                    placeholderTextColor={Vista.textDim}
-                    multiline
-                  />
+                  <Pressable
+                    onPress={() => {
+                      setNoteDraft(notes);
+                      setNotesEditor(true);
+                    }}>
+                    <Text
+                      style={notes ? styles.notesPreview : styles.notesPlaceholder}
+                      numberOfLines={6}>
+                      {notes || 'Tap to add a note…'}
+                    </Text>
+                  </Pressable>
                 </View>
               )}
 
@@ -266,16 +264,53 @@ export const SystemFlyout: React.FC<Props> = ({
         </Pressable>
       </Pressable>
     </Modal>
+
+    {/* Dedicated Notes editor — its own modal so the keyboard can't steal focus
+        inside the scrolling flyout. */}
+    <Modal
+      visible={notesEditor}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setNotesEditor(false)}>
+      <View style={styles.editorOverlay}>
+        <GlassSurface radius={16} style={styles.editorCard}>
+          <Text style={styles.cardTitle}>Notes</Text>
+          <TextInput
+            style={styles.editorInput}
+            value={noteDraft}
+            onChangeText={setNoteDraft}
+            placeholder="Jot something down…"
+            placeholderTextColor={Vista.textDim}
+            multiline
+            autoFocus
+          />
+          <View style={styles.editorActions}>
+            <Pressable onPress={() => setNotesEditor(false)} hitSlop={8}>
+              <Text style={styles.editorCancel}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={styles.editorSave}
+              onPress={() => {
+                onNotesChange(noteDraft);
+                setNotesEditor(false);
+              }}>
+              <Text style={styles.editorSaveText}>Save</Text>
+            </Pressable>
+          </View>
+        </GlassSurface>
+      </View>
+    </Modal>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {flex: 1, justifyContent: 'flex-end', alignItems: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)'},
-  wrap: {width: 340, maxWidth: '95%', maxHeight: '82%', marginRight: 8},
+  wrap: {width: 340, maxWidth: '95%', maxHeight: '82%', marginRight: 8, marginBottom: 72},
   panel: {padding: 16, flexShrink: 1},
   bigTime: {color: Vista.text, fontSize: 34, fontWeight: '700'},
   bigDate: {color: Vista.textDim, fontSize: 14, marginBottom: 10},
-  scroll: {flexGrow: 0},
+  scroll: {flexGrow: 0, maxHeight: SCROLL_MAX},
   card: {
     backgroundColor: 'rgba(0,0,0,0.18)',
     borderRadius: 12,
@@ -305,6 +340,28 @@ const styles = StyleSheet.create({
   barFill: {height: '100%', borderRadius: 6},
   sysLabel: {color: Vista.text, fontSize: 13, marginBottom: 5},
   notes: {color: Vista.text, fontSize: 14, minHeight: 64, textAlignVertical: 'top', padding: 0},
+  notesPreview: {color: Vista.text, fontSize: 14, lineHeight: 20},
+  notesPlaceholder: {color: Vista.textDim, fontSize: 14, fontStyle: 'italic'},
+  editorOverlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-start', paddingTop: 72, paddingHorizontal: 20},
+  editorCard: {padding: 16},
+  editorInput: {
+    color: Vista.text,
+    fontSize: 15,
+    lineHeight: 22,
+    minHeight: 140,
+    maxHeight: 280,
+    textAlignVertical: 'top',
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Vista.borderSoft,
+  },
+  editorActions: {flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 22, marginTop: 14},
+  editorCancel: {color: '#9cc2ff', fontSize: 15, fontWeight: '600'},
+  editorSave: {backgroundColor: Vista.accent, paddingHorizontal: 22, paddingVertical: 10, borderRadius: 20},
+  editorSaveText: {color: '#fff', fontSize: 15, fontWeight: '700'},
   notif: {flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Vista.borderSoft},
   notifBody: {flex: 1},
   notifApp: {color: '#9cc2ff', fontSize: 11, fontWeight: '700'},
