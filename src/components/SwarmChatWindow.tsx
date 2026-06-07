@@ -21,6 +21,7 @@ import {
   type StoredMessage,
 } from '../db/ChatPersistence';
 import {getApiKey, setApiKey, hasApiKey} from '../db/Settings';
+import {PROVIDER_NAME, PROVIDER_KEY_URL} from '../config';
 
 const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
   const [input, setInput] = useState('');
@@ -163,7 +164,7 @@ const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>Ask Swarm anything</Text>
             <Text style={styles.emptySubtitle}>
-              Powered by DeepSeek. Your chat is saved on this device.
+              Powered by {PROVIDER_NAME}. Your chat is saved on this device.
             </Text>
             {!keyConfigured && (
               <TouchableOpacity style={styles.ctaButton} onPress={openSettings}>
@@ -210,9 +211,9 @@ const SwarmChatWindow = ({onClose}: {onClose: () => void}) => {
         onRequestClose={() => setSettingsOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>DeepSeek API key</Text>
+            <Text style={styles.modalTitle}>{PROVIDER_NAME} API key</Text>
             <Text style={styles.modalSubtitle}>
-              Stored only on this device. Get a key at platform.deepseek.com.
+              Stored only on this device. Get a free key at {PROVIDER_KEY_URL}.
             </Text>
             <TextInput
               style={styles.modalInput}

@@ -1,19 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {DEFAULT_DEEPSEEK_API_KEY} from '../config';
+import {DEFAULT_API_KEY} from '../config';
 
 const API_KEY_STORAGE = '@vista_swarm_api_key';
 
-/** Returns the saved DeepSeek API key, falling back to any build-time default. */
+/** Returns the saved API key, falling back to any build-time default. */
 export const getApiKey = async (): Promise<string> => {
   try {
     const saved = await AsyncStorage.getItem(API_KEY_STORAGE);
-    return (saved ?? '').trim() || DEFAULT_DEEPSEEK_API_KEY;
+    return (saved ?? '').trim() || DEFAULT_API_KEY;
   } catch {
-    return DEFAULT_DEEPSEEK_API_KEY;
+    return DEFAULT_API_KEY;
   }
 };
 
-/** Persists (or clears) the user's DeepSeek API key. */
+/** Persists (or clears) the user's API key. */
 export const setApiKey = async (key: string): Promise<void> => {
   const trimmed = key.trim();
   if (trimmed) {

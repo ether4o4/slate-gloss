@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, SYSTEM_PROMPT} from '../config';
+import {CHAT_BASE_URL, CHAT_MODEL, SYSTEM_PROMPT} from '../config';
 import {getApiKey} from '../db/Settings';
 
 export interface ChatMessage {
@@ -10,21 +10,21 @@ export interface ChatMessage {
 /** Raised when no API key has been configured yet. */
 export class MissingApiKeyError extends Error {
   constructor() {
-    super('Add your DeepSeek API key in Swarm settings to start chatting.');
+    super('Add your API key in Swarm settings to start chatting.');
     this.name = 'MissingApiKeyError';
   }
 }
 
 const client = axios.create({
-  baseURL: DEEPSEEK_BASE_URL,
+  baseURL: CHAT_BASE_URL,
   timeout: 60000,
   headers: {'Content-Type': 'application/json'},
 });
 
 /**
- * Sends the conversation to DeepSeek and returns the assistant's reply.
- * A system prompt is prepended automatically so callers only need to pass the
- * user/assistant turns. The API key is read from on-device storage per request.
+ * Sends the conversation to the configured (OpenAI-compatible) provider and
+ * returns the assistant's reply. The API key is read from on-device storage per
+ * request, so nothing secret is bundled into the app.
  */
 export const sendMessageToDeepSeek = async (
   messages: ChatMessage[],
@@ -36,7 +36,7 @@ export const sendMessageToDeepSeek = async (
 
   try {
     const payload = {
-      model: DEEPSEEK_MODEL,
+      model: CHAT_MODEL,
       messages: [
         {role: 'system', content: SYSTEM_PROMPT},
         ...messages.map(({role, content}) => ({role, content})),
@@ -50,7 +50,7 @@ export const sendMessageToDeepSeek = async (
     const reply = response.data?.choices?.[0]?.message;
 
     if (!reply || typeof reply.content !== 'string') {
-      throw new Error('Empty response from DeepSeek');
+      throw new Error('Empty response from the AI provider');
     }
 
     return {role: 'assistant', content: reply.content};
@@ -61,7 +61,7 @@ export const sendMessageToDeepSeek = async (
       if (error.code === 'ECONNABORTED') {
         message = 'Request timed out. Check your connection and try again.';
       } else if (error.response?.status === 401) {
-        message = 'Authentication failed — check your DeepSeek API key in settings.';
+        message = 'Authentication failed — check your API key in settings.';
       } else if (error.response?.status === 429) {
         message = 'Rate limit reached. Please wait a moment and try again.';
       } else if (error.response?.data?.error?.message) {
@@ -71,7 +71,7 @@ export const sendMessageToDeepSeek = async (
       }
     }
 
-    console.error('DeepSeek API Error:', error);
+    console.error('AI provider error:', error);
     throw new Error(message);
   }
 };

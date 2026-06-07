@@ -1,9 +1,9 @@
 # Vista Launcher — Windows Aero for Android
 
 A glossy Windows Vista–style **home-screen launcher** for Android, built with
-React Native. It shows your wallpaper through a translucent Aero UI, lists and
-launches your installed apps, and includes **Swarm**, a built-in DeepSeek AI
-chat.
+React Native. A wallpaper desktop with placeable icons, an operational Recycle
+Bin, gadgets, a two-pane Start menu, a taskbar with a calendar/notification
+flyout, and **Swarm** — a built-in AI assistant (free Groq by default).
 
 ## 📥 Download the APK
 
@@ -11,9 +11,7 @@ chat.
 
 ➡️ **https://github.com/ether4o4/slate-gloss/releases/latest/download/vista-launcher.apk**
 
-> This repo is **private**, so the link downloads only when you're signed in to
-> GitHub (works in your phone's browser while logged in). Make the repo public
-> if you want a no-login link.
+> Public repo — the link downloads directly on any device, no login required.
 
 Every push to `main` / `claude/**` rebuilds the APK and republishes it to that
 same URL, so it stays current automatically.
@@ -22,21 +20,29 @@ same URL, so it stays current automatically.
 1. Open the link above on your Android phone and download the APK.
 2. Tap it and allow **“install from unknown sources.”**
 3. Open the app, then **Start ▸ “Set as default launcher”** to use it as home.
-4. For Swarm AI, tap **⚙** in the Swarm panel and paste your DeepSeek API key
-   (stored only on your device — never committed to this repo).
+4. For Swarm AI, tap **⚙** in the Swarm panel and paste a **free Groq API key**
+   (console.groq.com/keys) — stored only on your device, never committed.
+5. Optional: grant **Notification access** (from the taskbar clock popup) to
+   mirror notifications, and pick a **wallpaper** from Start ▸ Wallpaper.
 
 ---
 
 ## ✨ Features
 
-- **Real home-screen launcher** — registers the `HOME` intent and lets your
-  wallpaper show through.
-- **Installed-app grid** with live search; tap to launch, long-press for
-  *App info* / *Uninstall* (via a small native Kotlin bridge — no third-party
-  native dependency).
-- **Vista Aero UI** — glossy taskbar, Start pearl + menu, frosted panels.
-- **Swarm AI chat** (DeepSeek) reachable from the taskbar / Start menu, with
-  on-device chat history.
+- **Real home-screen launcher** — registers the `HOME` intent, requests the
+  default-home role, and lets your wallpaper show through.
+- **Desktop** with **placeable, draggable icons** and an **operational Recycle
+  Bin** (drag an icon onto it; restore / empty / uninstall).
+- **Two-pane Start menu** (resizable) — scrollable programs on the left,
+  **Pinned + Recent** on the right, with search.
+- **Gadgets** — clock + battery, Vista-sidebar style.
+- **Taskbar** with Start orb, pinned quick-launch, and a clock that opens a
+  **calendar + notifications** flyout.
+- **Changeable wallpaper** (system wallpaper picker).
+- **Swarm AI** reachable from the taskbar / Start menu, on-device chat history,
+  pluggable OpenAI-compatible provider (free **Groq** by default).
+- Native Kotlin bridge for app list/launch, battery, wallpaper, default-launcher
+  role, and notification mirroring — no third-party native dependency.
 
 ### Built for low battery / heat
 The “glass” is **translucent gradients + a static sheen**, not per-frame blur,
@@ -50,9 +56,9 @@ minute.
 
 - React Native **0.73** (old architecture — chosen for build reliability)
 - `react-native-linear-gradient` for the gloss
-- `@react-native-async-storage/async-storage` for chat history + API key
-- `axios` for the DeepSeek API
-- A small Kotlin `LauncherModule` for PackageManager access
+- `@react-native-async-storage/async-storage` for layout, history, API key
+- `axios` for the OpenAI-compatible chat API
+- Kotlin `LauncherModule` + `NotificationService` for native launcher features
 
 ## 📁 Project structure
 
@@ -119,5 +125,5 @@ rather than shipping a key on-device.
 
 **https://github.com/ether4o4/slate-gloss/releases/latest/download/vista-launcher.apk**
 
-_Updated automatically on every build. Private repo → sign in to GitHub to
-download._
+_Updated automatically on every build. Public repo → downloads on any device,
+no login._
