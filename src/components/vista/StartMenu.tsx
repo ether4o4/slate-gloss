@@ -126,6 +126,21 @@ export const StartMenu: React.FC<Props> = ({
     return q ? apps.filter(a => a.label.toLowerCase().includes(q)) : apps;
   }, [apps, query]);
 
+  // Auto-launch once the search narrows to a single app (after a few letters).
+  // A short debounce means it won't fire mid-burst as you keep typing.
+  const AUTO_MIN_LEN = 3;
+  useEffect(() => {
+    if (!visible) return;
+    const q = query.trim();
+    if (q.length < AUTO_MIN_LEN || filtered.length !== 1) return;
+    const only = filtered[0];
+    const t = setTimeout(() => onLaunch(only.packageName), 350);
+    return () => clearTimeout(t);
+  }, [visible, query, filtered, onLaunch]);
+
+  // Keep the panel above the keyboard with the search bar visible.
+  const renderH = Math.max(260, Math.min(dims.h, screen.height - (72 + kb) - 48));
+
   const pinnedApps = pinned.map(p => appsByPkg[p]).filter(Boolean) as AppInfo[];
   const recentApps = recents.map(p => appsByPkg[p]).filter(Boolean) as AppInfo[];
 
@@ -134,7 +149,7 @@ export const StartMenu: React.FC<Props> = ({
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable
           onPress={() => {}}
-          style={[styles.panelWrap, {width: dims.w, height: dims.h, marginBottom: 72 + kb}]}>
+          style={[styles.panelWrap, {width: dims.w, height: renderH, marginBottom: 72 + kb}]}>
           <GlassSurface radius={18} style={styles.panel}>
             {/* resize handle (top-right corner) */}
             <View {...resizer.panHandlers} style={styles.resizeHandle}>
