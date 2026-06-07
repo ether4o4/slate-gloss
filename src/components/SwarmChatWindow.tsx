@@ -208,7 +208,7 @@ const SwarmChatWindow = ({
             </Text>
             {!keyConfigured && (
               <TouchableOpacity style={styles.ctaButton} onPress={openSettings}>
-                <Text style={styles.ctaText}>Add your DeepSeek API key</Text>
+                <Text style={styles.ctaText}>Add your {PROVIDER_NAME} API key</Text>
               </TouchableOpacity>
             )}
           </View>
