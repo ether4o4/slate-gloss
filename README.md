@@ -1,9 +1,10 @@
-# Vista Launcher — Windows Aero for Android
+# NeverSoft Services — Windows Vista-style Android launcher
 
-A glossy Windows Vista–style **home-screen launcher** for Android, built with
-React Native. A wallpaper desktop with placeable icons, an operational Recycle
-Bin, gadgets, a two-pane Start menu, a taskbar with a calendar/notification
-flyout, and **Swarm** — a built-in AI assistant (free Groq by default).
+A glossy Windows Vista–style **home-screen launcher** for Android by
+**NeverSoft Services**, built with React Native. A wallpaper desktop with
+placeable icons, an operational Recycle Bin, gadgets, a two-pane Start menu, a
+taskbar with a calendar/notification flyout, and **Swarm** — a built-in AI
+assistant (free Groq by default).
 
 ## 📥 Download the APK
 
