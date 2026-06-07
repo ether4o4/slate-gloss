@@ -8,11 +8,14 @@ built-in AI assistant (free Groq by default).
 
 ## 📥 Download the APK
 
+[![Download the APK](https://img.shields.io/badge/⬇%20DOWNLOAD-NSOS%20APK-e2574c?style=for-the-badge&logo=android&logoColor=white)](https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk)
+
 **Rolling link (always the newest build):**
 
 ➡️ **https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk**
 
 > Public repo — the link downloads directly on any device, no login required.
+> Open it in a browser (not an in-app webview) so it downloads cleanly.
 
 Every push to `main` / `claude/**` rebuilds the APK and republishes it to that
 same URL, so it stays current automatically.
@@ -127,9 +130,20 @@ through a backend proxy rather than shipping a key on-device.
 
 ---
 
-## ⬇️ APK download (rolling, always latest)
+## ⬇️ Download NeverSoft OS (always the latest build)
 
-**https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk**
+[![Download the APK](https://img.shields.io/badge/⬇%20DOWNLOAD-NSOS%20APK-e2574c?style=for-the-badge&logo=android&logoColor=white)](https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk)
+&nbsp;
+[![Latest build](https://img.shields.io/github/v/release/ether4o4/NeverSoft-OS?style=for-the-badge&label=build&color=222)](https://github.com/ether4o4/NeverSoft-OS/releases/latest)
 
-_Updated automatically on every build. Public repo → downloads on any device,
-no login._
+**Direct link (auto-updates to the newest build):**
+👉 https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk
+
+**How to install on Android:**
+1. Open the link above **in a browser** (Chrome), not an in-app webview.
+2. Tap the download notification → **Install** (allow “unknown sources”).
+3. Open it → **Start ▸ Set as default launcher**.
+
+_The link never changes — every push rebuilds the APK and repoints it here, so
+this is always the freshest version._
+
