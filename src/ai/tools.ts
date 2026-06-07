@@ -126,4 +126,50 @@ export const SWARM_TOOLS = [
       parameters: {type: 'object', properties: {}},
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'list_commands',
+      description: 'List everything you can do for the user (themes, apps, widgets, device).',
+      parameters: {type: 'object', properties: {}},
+    },
+  },
 ];
+
+/** Copy-paste-friendly cheat sheet of example things to ask Swarm. */
+export const SWARM_CHEATSHEET: {category: string; items: string[]}[] = [
+  {
+    category: 'Themes & looks',
+    items: [
+      'Make the taskbar matrix',
+      'Give me a secret theme',
+      'List all themes',
+      'Change my wallpaper',
+      'Let me set a custom start button',
+    ],
+  },
+  {
+    category: 'Apps',
+    items: ['Open the camera', 'Pin Chrome', 'Add Maps to my desktop', 'Launch Spotify'],
+  },
+  {
+    category: 'Widgets',
+    items: [
+      'Turn on the weather widget',
+      'Turn off the notifications widget',
+      'Show the system widget',
+    ],
+  },
+  {
+    category: 'Device',
+    items: [
+      "What's my battery and RAM?",
+      'What time is it?',
+      'Set NeverSoft as my default launcher',
+    ],
+  },
+];
+
+/** Flat text version (used by the list_commands tool). */
+export const cheatsheetText = (): string =>
+  SWARM_CHEATSHEET.map(c => `${c.category}:\n` + c.items.map(i => `• ${i}`).join('\n')).join('\n\n');

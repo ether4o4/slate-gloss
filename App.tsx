@@ -13,7 +13,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 
 import {Vista, TASKBAR_PRESETS} from './src/theme';
-import {AI_THEMES} from './src/ai/tools';
+import {AI_THEMES, cheatsheetText} from './src/ai/tools';
 import type {ToolExecutor} from './src/api/DeepSeekService';
 import {Desktop} from './src/components/vista/Desktop';
 import {Taskbar} from './src/components/vista/Taskbar';
@@ -260,6 +260,8 @@ const App: React.FC = () => {
   const executeTool = useCallback<ToolExecutor>(
     async (name, args) => {
       switch (name) {
+        case 'list_commands':
+          return cheatsheetText();
         case 'list_themes':
           return allThemes.map(t => t.name).join(', ');
         case 'apply_theme': {

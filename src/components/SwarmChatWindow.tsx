@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   StyleSheet,
   Keyboard,
   Platform,
@@ -22,6 +23,7 @@ import {
 } from '../db/ChatPersistence';
 import {getApiKey, setApiKey, hasApiKey} from '../db/Settings';
 import {PROVIDER_NAME, PROVIDER_KEY_URL} from '../config';
+import {SWARM_CHEATSHEET} from '../ai/tools';
 
 const formatCmd = (c: ToolCallRecord): string => {
   const args = Object.entries(c.args || {})
@@ -30,6 +32,15 @@ const formatCmd = (c: ToolCallRecord): string => {
   const result = c.result.length > 80 ? `${c.result.slice(0, 80)}…` : c.result;
   return `▸ ${c.name}(${args}) → ${result}`;
 };
+
+const SUGGESTIONS: {label: string; prompt: string}[] = [
+  {label: '🎨 Make the taskbar Matrix', prompt: 'Make the taskbar the Matrix theme'},
+  {label: '✦ Surprise me — secret theme', prompt: 'Give me a secret theme'},
+  {label: '📷 Open the camera', prompt: 'Open the camera'},
+  {label: '🔋 Battery & RAM?', prompt: "What's my battery and RAM usage?"},
+  {label: '📌 Pin Chrome', prompt: 'Pin Chrome'},
+  {label: '🖼️ Change my wallpaper', prompt: 'Change my wallpaper'},
+];
 
 const SwarmChatWindow = ({
   onClose,
@@ -43,6 +54,7 @@ const SwarmChatWindow = ({
   const [loading, setLoading] = useState(false);
   const [keyConfigured, setKeyConfigured] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [cheatOpen, setCheatOpen] = useState(false);
   const [keyDraft, setKeyDraft] = useState('');
   const [kb, setKb] = useState(0);
   const listRef = useRef<FlatList<StoredMessage>>(null);
@@ -80,8 +92,8 @@ const SwarmChatWindow = ({
     refreshKeyStatus();
   }, [keyDraft, refreshKeyStatus]);
 
-  const handleSend = async () => {
-    const text = input.trim();
+  const send = async (raw: string) => {
+    const text = raw.trim();
     if (!text || loading) {
       return;
     }
@@ -126,6 +138,8 @@ const SwarmChatWindow = ({
     }
   };
 
+  const handleSend = () => send(input);
+
   const handleClear = () => {
     if (messages.length === 0) {
       return;
@@ -156,6 +170,9 @@ const SwarmChatWindow = ({
           <Text style={styles.headerTitle}>Swarm</Text>
         </View>
         <View style={styles.headerActions}>
+          <TouchableOpacity onPress={() => setCheatOpen(true)} hitSlop={hitSlop}>
+            <Text style={styles.headerAction}>?</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={openSettings} hitSlop={hitSlop}>
             <Text style={styles.headerAction}>⚙</Text>
           </TouchableOpacity>
@@ -200,16 +217,34 @@ const SwarmChatWindow = ({
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Ask Swarm anything</Text>
+            <Text style={styles.emptyWave}>👋</Text>
+            <Text style={styles.emptyTitle}>Hey, I'm Swarm</Text>
             <Text style={styles.emptySubtitle}>
-              Powered by {PROVIDER_NAME}. Swarm can run launcher commands — try
-              “make the taskbar matrix green”, “open the camera”, or “give me a
-              secret theme”.
+              I live inside NeverSoft OS and I can actually run your launcher —
+              change themes, open & pin apps, toggle widgets, set your wallpaper,
+              and more. Just tell me what you want.
             </Text>
-            {!keyConfigured && (
-              <TouchableOpacity style={styles.ctaButton} onPress={openSettings}>
-                <Text style={styles.ctaText}>Add your {PROVIDER_NAME} API key</Text>
-              </TouchableOpacity>
+
+            {keyConfigured ? (
+              <View style={styles.suggestWrap}>
+                {SUGGESTIONS.map(s => (
+                  <TouchableOpacity
+                    key={s.prompt}
+                    style={styles.suggestChip}
+                    onPress={() => send(s.prompt)}>
+                    <Text style={styles.suggestText}>{s.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <>
+                <Text style={styles.emptyHint}>
+                  First, add a free {PROVIDER_NAME} key (grab one at {PROVIDER_KEY_URL}).
+                </Text>
+                <TouchableOpacity style={styles.ctaButton} onPress={openSettings}>
+                  <Text style={styles.ctaText}>Add your {PROVIDER_NAME} API key</Text>
+                </TouchableOpacity>
+              </>
             )}
           </View>
         }
@@ -279,6 +314,49 @@ const SwarmChatWindow = ({
           </View>
         </View>
       </Modal>
+
+      {/* Command cheat sheet */}
+      <Modal
+        visible={cheatOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCheatOpen(false)}>
+        <View style={styles.cheatOverlay}>
+          <View style={styles.cheatCard}>
+            <View style={styles.cheatHeader}>
+              <Text style={styles.modalTitle}>What you can ask Swarm</Text>
+              <TouchableOpacity onPress={() => setCheatOpen(false)} hitSlop={hitSlop}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.cheatHint}>
+              Tap a command to drop it in the box, or long-press the text to copy.
+            </Text>
+            <ScrollView style={styles.cheatScroll} showsVerticalScrollIndicator={false}>
+              {SWARM_CHEATSHEET.map(group => (
+                <View key={group.category} style={styles.cheatGroup}>
+                  <Text style={styles.cheatCategory}>{group.category}</Text>
+                  {group.items.map(item => (
+                    <View key={item} style={styles.cheatRow}>
+                      <Text selectable style={styles.cheatCmd}>
+                        {item}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.cheatUse}
+                        onPress={() => {
+                          setInput(item);
+                          setCheatOpen(false);
+                        }}>
+                        <Text style={styles.cheatUseText}>Use</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -328,9 +406,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cmdText: {color: '#9be8b0', fontSize: 12.5, fontFamily: Platform.OS === 'android' ? 'monospace' : 'Menlo'},
-  empty: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32},
-  emptyTitle: {color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 8},
-  emptySubtitle: {color: '#9fb4c9', fontSize: 13, textAlign: 'center', lineHeight: 19},
+  empty: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28},
+  emptyWave: {fontSize: 40, marginBottom: 6},
+  emptyTitle: {color: '#fff', fontSize: 22, fontWeight: '700', marginBottom: 8},
+  emptySubtitle: {color: '#9fb4c9', fontSize: 14, textAlign: 'center', lineHeight: 20},
+  emptyHint: {color: '#cdd9e6', fontSize: 13, textAlign: 'center', marginTop: 16},
+  suggestWrap: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 18},
+  suggestChip: {
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.22)',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  suggestText: {color: '#eaf2ff', fontSize: 13},
   ctaButton: {
     marginTop: 18,
     backgroundColor: '#2f7bf6',
@@ -401,6 +491,32 @@ const styles = StyleSheet.create({
   modalCancel: {color: '#9cc2ff', fontSize: 15, fontWeight: '600'},
   modalSave: {backgroundColor: '#2f7bf6', paddingHorizontal: 22, paddingVertical: 10, borderRadius: 20},
   modalSaveText: {color: '#fff', fontSize: 15, fontWeight: '700'},
+  cheatOverlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 18},
+  cheatCard: {
+    backgroundColor: '#16314f',
+    borderRadius: 18,
+    padding: 18,
+    maxHeight: '82%',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  cheatHeader: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'},
+  cheatHint: {color: '#9fb4c9', fontSize: 12.5, marginTop: 6, marginBottom: 8},
+  cheatScroll: {flexGrow: 0},
+  cheatGroup: {marginTop: 10},
+  cheatCategory: {color: '#9cc2ff', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6},
+  cheatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingVertical: 7,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  cheatCmd: {color: '#fff', fontSize: 14, flex: 1},
+  cheatUse: {backgroundColor: '#2f7bf6', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 6},
+  cheatUseText: {color: '#fff', fontSize: 13, fontWeight: '700'},
 });
 
 export default SwarmChatWindow;
