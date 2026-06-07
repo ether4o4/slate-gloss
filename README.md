@@ -92,14 +92,18 @@ Node 18+.
 
 ```bash
 npm install
-cd android && ./gradlew assembleDebug
-# APK: android/app/build/outputs/apk/debug/app-debug.apk
+cd android && ./gradlew assembleRelease
+# APK: android/app/build/outputs/apk/release/app-release.apk
 ```
 
-### Signed release builds (optional)
-The CI publishes a **debug-signed** APK (installable anywhere). For a Play-ready
-signed build, add a keystore and wire `assembleRelease`; see
-`docs/ANDROID_BUILD_SETUP.md`.
+> Use `assembleRelease` for a **standalone** APK — it bundles the JS into the
+> app. A plain `assembleDebug` build expects a running Metro dev server and will
+> show “Unable to load script” if installed on its own.
+
+### Signing
+CI publishes a **release** build signed with the standard debug keystore, so it
+installs on any device. For a Play-ready upload, swap in your own keystore and
+wire the signing secrets; see `docs/ANDROID_BUILD_SETUP.md`.
 
 ---
 
