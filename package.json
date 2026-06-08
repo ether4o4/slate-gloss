@@ -1,7 +1,7 @@
 {
-  "name": "vistalauncher",
+  "name": "neversoft-os",
   "version": "1.0.0",
-  "description": "VistaLauncher - A Windows Vista-style React Native launcher with a DeepSeek-powered Swarm chat",
+  "description": "NeverSoftOS - A glassmorphism React Native launcher with a DeepSeek-powered Swarm chat",
   "main": "index.js",
   "private": true,
   "scripts": {

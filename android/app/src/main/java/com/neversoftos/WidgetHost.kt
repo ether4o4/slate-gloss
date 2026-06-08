@@ -1,4 +1,4 @@
-package com.vistalauncher
+package com.neversoftos
 
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager

@@ -114,7 +114,7 @@ export const SWARM_TOOLS = [
     type: 'function',
     function: {
       name: 'set_default_launcher',
-      description: 'Prompt the user to set Vista Launcher as the default home app.',
+      description: 'Prompt the user to set NeverSoft OS as the default home app.',
       parameters: {type: 'object', properties: {}},
     },
   },

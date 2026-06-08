@@ -2,7 +2,7 @@ import React, {useRef} from 'react';
 import {Animated, PanResponder, Pressable, StyleSheet, Text, View} from 'react-native';
 import type {DesktopWidget} from '../../db/LauncherStore';
 import {WidgetHostView} from '../../native/Widgets';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 
 interface Props {
   widget: DesktopWidget;
@@ -76,11 +76,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  grip: {color: Vista.textDim, fontSize: 12, letterSpacing: -2},
+  grip: {color: Theme.textDim, fontSize: 12, letterSpacing: -2},
   remove: {color: '#fff', fontSize: 13, fontWeight: '700'},
   body: {flex: 1},
   host: {flex: 1},
-  fallback: {color: Vista.textDim, fontSize: 12, padding: 10, textAlign: 'center'},
+  fallback: {color: Theme.textDim, fontSize: 12, padding: 10, textAlign: 'center'},
 });
 
 export default HostedWidget;

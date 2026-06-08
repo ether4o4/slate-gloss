@@ -2,7 +2,7 @@ import React, {useRef} from 'react';
 import {Animated, PanResponder, StyleSheet, Text, View} from 'react-native';
 import type {AppInfo} from '../../native/Launcher';
 import {AppIconImage} from './Icon';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 
 interface Props {
   app?: AppInfo;
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   cell: {position: 'absolute', alignItems: 'center', paddingTop: 6},
   iconWrap: {marginBottom: 4},
   label: {
-    color: Vista.text,
+    color: Theme.text,
     fontSize: 11,
     textAlign: 'center',
     maxWidth: 76,

@@ -1,4 +1,4 @@
-package com.vistalauncher
+package com.neversoftos
 
 import android.app.Application
 import com.facebook.react.PackageList

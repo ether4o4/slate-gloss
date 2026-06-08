@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY = '@vista_swarm_chat_history';
+const STORAGE_KEY = '@nsos_swarm_chat_history';
 
 /** 'cmd' is a launcher command Swarm ran (shown like a terminal line). */
 export type StoredRole = 'user' | 'assistant' | 'cmd';

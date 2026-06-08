@@ -4,7 +4,7 @@ import type {AppInfo} from '../../native/Launcher';
 import type {RecycleItem} from '../../db/LauncherStore';
 import {GlassSurface} from './GlassSurface';
 import {AppIconImage} from './Icon';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 
 interface Props {
   visible: boolean;
@@ -62,7 +62,7 @@ export const RecycleBin: React.FC<Props> = ({
                       <Text style={styles.actionText}>Restore</Text>
                     </Pressable>
                     <Pressable onPress={() => onUninstall(item.packageName)} style={styles.action}>
-                      <Text style={[styles.actionText, {color: Vista.danger}]}>Uninstall</Text>
+                      <Text style={[styles.actionText, {color: Theme.danger}]}>Uninstall</Text>
                     </Pressable>
                   </View>
                 );
@@ -84,12 +84,12 @@ const styles = StyleSheet.create({
   center: {maxHeight: '80%'},
   card: {padding: 16},
   header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10},
-  title: {color: Vista.text, fontSize: 18, fontWeight: '700'},
-  close: {color: Vista.text, fontSize: 18},
+  title: {color: Theme.text, fontSize: 18, fontWeight: '700'},
+  close: {color: Theme.text, fontSize: 18},
   list: {maxHeight: 360},
-  empty: {color: Vista.textDim, textAlign: 'center', paddingVertical: 28},
+  empty: {color: Theme.textDim, textAlign: 'center', paddingVertical: 28},
   row: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8},
-  rowLabel: {flex: 1, color: Vista.text, fontSize: 14},
+  rowLabel: {flex: 1, color: Theme.text, fontSize: 14},
   action: {paddingHorizontal: 8, paddingVertical: 4},
   actionText: {color: '#9cc2ff', fontWeight: '600', fontSize: 13},
   emptyBtn: {

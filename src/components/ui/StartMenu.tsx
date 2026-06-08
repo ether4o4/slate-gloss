@@ -13,7 +13,7 @@ import {
 import type {AppInfo} from '../../native/Launcher';
 import {GlassSurface} from './GlassSurface';
 import {AppIconImage} from './Icon';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 
 interface Props {
   visible: boolean;
@@ -145,7 +145,7 @@ export const StartMenu: React.FC<Props> = ({
                   value={query}
                   onChangeText={setQuery}
                   placeholder="Search programs…"
-                  placeholderTextColor={Vista.textDim}
+                  placeholderTextColor={Theme.textDim}
                   autoCorrect={false}
                 />
                 <FlatList
@@ -240,32 +240,32 @@ const styles = StyleSheet.create({
   panelWrap: {marginLeft: 8, marginBottom: 72},
   panel: {flex: 1, padding: 14},
   resizeHandle: {position: 'absolute', top: 0, right: 0, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', zIndex: 5},
-  resizeGlyph: {color: Vista.textDim, fontSize: 16, transform: [{rotate: '90deg'}]},
-  brand: {color: Vista.text, fontSize: 20, fontWeight: '800', marginBottom: 10},
+  resizeGlyph: {color: Theme.textDim, fontSize: 16, transform: [{rotate: '90deg'}]},
+  brand: {color: Theme.text, fontSize: 20, fontWeight: '800', marginBottom: 10},
   columns: {flex: 1, flexDirection: 'row'},
   left: {flex: 1.3},
   right: {flex: 1, paddingLeft: 4},
-  vDivider: {width: StyleSheet.hairlineWidth, backgroundColor: Vista.borderSoft, marginHorizontal: 8},
+  vDivider: {width: StyleSheet.hairlineWidth, backgroundColor: Theme.borderSoft, marginHorizontal: 8},
   search: {
     backgroundColor: 'rgba(0,0,0,0.25)',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    color: Vista.text,
+    color: Theme.text,
     fontSize: 14,
     marginBottom: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Vista.borderSoft,
+    borderColor: Theme.borderSoft,
   },
   progRow: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, paddingHorizontal: 6, borderRadius: 8},
   rowPressed: {backgroundColor: 'rgba(255,255,255,0.16)'},
-  progLabel: {flex: 1, color: Vista.text, fontSize: 14},
-  sectionTitle: {color: Vista.textDim, fontSize: 12, fontWeight: '700', marginBottom: 4, textTransform: 'uppercase'},
-  hint: {color: Vista.textDim, fontSize: 12, fontStyle: 'italic'},
-  footer: {flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Vista.borderSoft, paddingTop: 10, marginTop: 8},
+  progLabel: {flex: 1, color: Theme.text, fontSize: 14},
+  sectionTitle: {color: Theme.textDim, fontSize: 12, fontWeight: '700', marginBottom: 4, textTransform: 'uppercase'},
+  hint: {color: Theme.textDim, fontSize: 12, fontStyle: 'italic'},
+  footer: {flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: Theme.borderSoft, paddingTop: 10, marginTop: 8},
   footerBtn: {alignItems: 'center', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10},
   footerIcon: {color: '#bfe3ff', fontSize: 18},
-  footerLabel: {color: Vista.text, fontSize: 12, marginTop: 2},
+  footerLabel: {color: Theme.text, fontSize: 12, marginTop: 2},
 });
 
 export default StartMenu;

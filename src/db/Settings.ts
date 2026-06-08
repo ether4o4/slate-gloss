@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {DEFAULT_API_KEY} from '../config';
 
-const API_KEY_STORAGE = '@vista_swarm_api_key';
+const API_KEY_STORAGE = '@nsos_swarm_api_key';
 
 /** Returns the saved API key, falling back to any build-time default. */
 export const getApiKey = async (): Promise<string> => {

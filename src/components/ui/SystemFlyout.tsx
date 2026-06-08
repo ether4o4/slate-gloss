@@ -14,7 +14,7 @@ import type {Weather} from '../../api/Weather';
 import {describeWeather} from '../../api/Weather';
 import {WIDGET_CATALOG} from '../../db/LauncherStore';
 import {GlassSurface} from './GlassSurface';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 
 const SCROLL_MAX = Math.round(Dimensions.get('window').height * 0.52);
 
@@ -280,7 +280,7 @@ export const SystemFlyout: React.FC<Props> = ({
             value={noteDraft}
             onChangeText={setNoteDraft}
             placeholder="Jot something down…"
-            placeholderTextColor={Vista.textDim}
+            placeholderTextColor={Theme.textDim}
             multiline
             autoFocus
           />
@@ -308,8 +308,8 @@ const styles = StyleSheet.create({
   overlay: {flex: 1, justifyContent: 'flex-end', alignItems: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)'},
   wrap: {width: 340, maxWidth: '95%', maxHeight: '82%', marginRight: 8, marginBottom: 72},
   panel: {padding: 16, flexShrink: 1},
-  bigTime: {color: Vista.text, fontSize: 34, fontWeight: '700'},
-  bigDate: {color: Vista.textDim, fontSize: 14, marginBottom: 10},
+  bigTime: {color: Theme.text, fontSize: 34, fontWeight: '700'},
+  bigDate: {color: Theme.textDim, fontSize: 14, marginBottom: 10},
   scroll: {flexGrow: 0, maxHeight: SCROLL_MAX},
   card: {
     backgroundColor: 'rgba(0,0,0,0.18)',
@@ -317,35 +317,35 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Vista.borderSoft,
+    borderColor: Theme.borderSoft,
   },
-  cardTitle: {color: Vista.textDim, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 8},
-  muted: {color: Vista.textDim, fontStyle: 'italic'},
+  cardTitle: {color: Theme.textDim, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 8},
+  muted: {color: Theme.textDim, fontStyle: 'italic'},
   calHeader: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6},
-  navArrow: {color: Vista.text, fontSize: 24, paddingHorizontal: 8},
-  monthLabel: {color: Vista.text, fontSize: 15, fontWeight: '600'},
+  navArrow: {color: Theme.text, fontSize: 24, paddingHorizontal: 8},
+  monthLabel: {color: Theme.text, fontSize: 15, fontWeight: '600'},
   weekRow: {flexDirection: 'row'},
-  weekday: {flex: 1, textAlign: 'center', color: Vista.textDim, fontSize: 11, fontWeight: '700'},
+  weekday: {flex: 1, textAlign: 'center', color: Theme.textDim, fontSize: 11, fontWeight: '700'},
   grid: {flexDirection: 'row', flexWrap: 'wrap'},
   dayCell: {width: `${100 / 7}%`, aspectRatio: 1, alignItems: 'center', justifyContent: 'center'},
   dayInner: {width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center'},
-  todayInner: {backgroundColor: Vista.accent},
-  dayText: {color: Vista.text, fontSize: 13},
+  todayInner: {backgroundColor: Theme.accent},
+  dayText: {color: Theme.text, fontSize: 13},
   todayText: {color: '#fff', fontWeight: '700'},
   weatherRow: {flexDirection: 'row', alignItems: 'center', gap: 14},
   weatherIcon: {fontSize: 40},
-  weatherTemp: {color: Vista.text, fontSize: 26, fontWeight: '700'},
-  weatherSub: {color: Vista.textDim, fontSize: 13},
+  weatherTemp: {color: Theme.text, fontSize: 26, fontWeight: '700'},
+  weatherSub: {color: Theme.textDim, fontSize: 13},
   barShell: {height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.14)', overflow: 'hidden'},
   barFill: {height: '100%', borderRadius: 6},
-  sysLabel: {color: Vista.text, fontSize: 13, marginBottom: 5},
-  notes: {color: Vista.text, fontSize: 14, minHeight: 64, textAlignVertical: 'top', padding: 0},
-  notesPreview: {color: Vista.text, fontSize: 14, lineHeight: 20},
-  notesPlaceholder: {color: Vista.textDim, fontSize: 14, fontStyle: 'italic'},
+  sysLabel: {color: Theme.text, fontSize: 13, marginBottom: 5},
+  notes: {color: Theme.text, fontSize: 14, minHeight: 64, textAlignVertical: 'top', padding: 0},
+  notesPreview: {color: Theme.text, fontSize: 14, lineHeight: 20},
+  notesPlaceholder: {color: Theme.textDim, fontSize: 14, fontStyle: 'italic'},
   editorOverlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-start', paddingTop: 72, paddingHorizontal: 20},
   editorCard: {padding: 16},
   editorInput: {
-    color: Vista.text,
+    color: Theme.text,
     fontSize: 15,
     lineHeight: 22,
     minHeight: 140,
@@ -356,18 +356,18 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 8,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Vista.borderSoft,
+    borderColor: Theme.borderSoft,
   },
   editorActions: {flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 22, marginTop: 14},
   editorCancel: {color: '#9cc2ff', fontSize: 15, fontWeight: '600'},
-  editorSave: {backgroundColor: Vista.accent, paddingHorizontal: 22, paddingVertical: 10, borderRadius: 20},
+  editorSave: {backgroundColor: Theme.accent, paddingHorizontal: 22, paddingVertical: 10, borderRadius: 20},
   editorSaveText: {color: '#fff', fontSize: 15, fontWeight: '700'},
-  notif: {flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Vista.borderSoft},
+  notif: {flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Theme.borderSoft},
   notifBody: {flex: 1},
   notifApp: {color: '#9cc2ff', fontSize: 11, fontWeight: '700'},
-  notifTitle: {color: Vista.text, fontSize: 14, fontWeight: '600'},
-  notifText: {color: Vista.textDim, fontSize: 13},
-  notifClose: {color: Vista.textDim, fontSize: 14, paddingLeft: 4},
+  notifTitle: {color: Theme.text, fontSize: 14, fontWeight: '600'},
+  notifText: {color: Theme.textDim, fontSize: 13},
+  notifClose: {color: Theme.textDim, fontSize: 14, paddingLeft: 4},
   pickerToggle: {paddingTop: 10, alignItems: 'center'},
   pickerToggleText: {color: '#9cc2ff', fontSize: 13, fontWeight: '700'},
   chips: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 10},
@@ -377,10 +377,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Vista.border,
+    borderColor: Theme.border,
   },
-  chipOn: {backgroundColor: Vista.accent},
-  chipText: {color: Vista.text, fontSize: 13},
+  chipOn: {backgroundColor: Theme.accent},
+  chipText: {color: Theme.text, fontSize: 13},
   chipTextOn: {color: '#fff', fontWeight: '700'},
 });
 

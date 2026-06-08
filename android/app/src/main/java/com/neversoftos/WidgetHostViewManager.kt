@@ -1,4 +1,4 @@
-package com.vistalauncher
+package com.neversoftos
 
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext

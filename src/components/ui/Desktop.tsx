@@ -4,7 +4,7 @@ import type {AppInfo} from '../../native/Launcher';
 import type {DesktopIcon as DesktopIconModel, DesktopWidget} from '../../db/LauncherStore';
 import {DesktopIcon} from './DesktopIcon';
 import {HostedWidget} from './HostedWidget';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 
 interface Rect {
   x: number;
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   binBadgeText: {color: '#fff', fontSize: 11, fontWeight: '700'},
   binLabel: {
-    color: Vista.text,
+    color: Theme.text,
     fontSize: 11,
     marginTop: 4,
     textShadowColor: 'rgba(0,0,0,0.75)',

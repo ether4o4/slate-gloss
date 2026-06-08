@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import type {AppInfo} from '../../native/Launcher';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 import {StartOrb} from './StartOrb';
 import {AppIconImage} from './Icon';
 
@@ -103,12 +103,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Vista.border,
+    borderColor: Theme.border,
   },
   swarmDot: {color: '#bfe3ff', fontSize: 18},
   clock: {alignItems: 'flex-end', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 8, minWidth: 56},
-  time: {color: Vista.text, fontSize: 15, fontWeight: '600'},
-  date: {color: Vista.textDim, fontSize: 11},
+  time: {color: Theme.text, fontSize: 15, fontWeight: '600'},
+  date: {color: Theme.textDim, fontSize: 11},
 });
 
 export default Taskbar;

@@ -2,7 +2,7 @@ import React from 'react';
 import {Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {GlassSurface} from './GlassSurface';
-import {Vista, TASKBAR_PRESETS} from '../../theme';
+import {Theme, TASKBAR_PRESETS} from '../../theme';
 
 interface Props {
   visible: boolean;
@@ -98,19 +98,19 @@ const styles = StyleSheet.create({
   center: {maxHeight: '85%'},
   card: {padding: 18},
   header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8},
-  title: {color: Vista.text, fontSize: 20, fontWeight: '800'},
-  close: {color: Vista.text, fontSize: 18},
-  section: {color: Vista.textDim, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginTop: 14, marginBottom: 8},
+  title: {color: Theme.text, fontSize: 20, fontWeight: '800'},
+  close: {color: Theme.text, fontSize: 18},
+  section: {color: Theme.textDim, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginTop: 14, marginBottom: 8},
   swatchGrid: {flexDirection: 'row', flexWrap: 'wrap', gap: 12},
   swatchWrap: {width: 84, alignItems: 'center'},
   swatch: {width: 84, height: 40, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)'},
   swatchSelected: {borderWidth: 3, borderColor: '#fff'},
-  swatchLabel: {color: Vista.textDim, fontSize: 11, marginTop: 4},
+  swatchLabel: {color: Theme.textDim, fontSize: 11, marginTop: 4},
   row: {flexDirection: 'row', gap: 12, alignItems: 'center'},
-  btn: {backgroundColor: Vista.accent, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 18, alignItems: 'center'},
+  btn: {backgroundColor: Theme.accent, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 18, alignItems: 'center'},
   btnText: {color: '#fff', fontWeight: '700'},
-  btnGhost: {borderRadius: 12, paddingVertical: 11, paddingHorizontal: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: Vista.border},
-  btnGhostText: {color: Vista.text, fontWeight: '600'},
+  btnGhost: {borderRadius: 12, paddingVertical: 11, paddingHorizontal: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: Theme.border},
+  btnGhostText: {color: Theme.text, fontWeight: '600'},
 });
 
 export default Personalize;

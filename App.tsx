@@ -12,15 +12,15 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-import {Vista, TASKBAR_PRESETS} from './src/theme';
+import {Theme, TASKBAR_PRESETS} from './src/theme';
 import {AI_THEMES, cheatsheetText} from './src/ai/tools';
 import type {ToolExecutor} from './src/api/DeepSeekService';
-import {Desktop} from './src/components/vista/Desktop';
-import {Taskbar} from './src/components/vista/Taskbar';
-import {StartMenu} from './src/components/vista/StartMenu';
-import {SystemFlyout} from './src/components/vista/SystemFlyout';
-import {RecycleBin} from './src/components/vista/RecycleBin';
-import {Personalize} from './src/components/vista/Personalize';
+import {Desktop} from './src/components/ui/Desktop';
+import {Taskbar} from './src/components/ui/Taskbar';
+import {StartMenu} from './src/components/ui/StartMenu';
+import {SystemFlyout} from './src/components/ui/SystemFlyout';
+import {RecycleBin} from './src/components/ui/RecycleBin';
+import {Personalize} from './src/components/ui/Personalize';
 import SwarmChatWindow from './src/components/SwarmChatWindow';
 import {
   getApps,
@@ -308,7 +308,7 @@ const App: React.FC = () => {
           return 'Opened the image picker for the Start button.';
         case 'set_default_launcher':
           requestDefaultLauncher();
-          return 'Prompted to set Vista as the default launcher.';
+          return 'Prompted to set NeverSoft OS as the default launcher.';
         case 'get_status': {
           const [b, sys] = await Promise.all([getBatteryInfo(), getSystemInfo()]);
           const now = new Date();
@@ -337,7 +337,7 @@ const App: React.FC = () => {
   if (!state) {
     return (
       <View style={[styles.root, styles.center]}>
-        <LinearGradient colors={Vista.aurora} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={Theme.aurora} style={StyleSheet.absoluteFill} />
         <ActivityIndicator color="#bfe3ff" />
       </View>
     );
@@ -346,7 +346,7 @@ const App: React.FC = () => {
   return (
     <View style={styles.root}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      <LinearGradient colors={Vista.vignette} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <LinearGradient colors={Theme.vignette} style={StyleSheet.absoluteFill} pointerEvents="none" />
 
       <View style={styles.body}>
         <Desktop

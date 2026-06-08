@@ -8,8 +8,8 @@ export interface Weather {
   updated: number;
 }
 
-const CACHE_KEY = '@vista_weather_v1';
-const LOC_KEY = '@vista_weather_loc_v1';
+const CACHE_KEY = '@nsos_weather_v1';
+const LOC_KEY = '@nsos_weather_loc_v1';
 const FRESH_MS = 30 * 60 * 1000; // 30 minutes
 
 interface Loc {

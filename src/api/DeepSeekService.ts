@@ -98,7 +98,7 @@ const friendlyError = (error: unknown): string => {
 
 const AGENT_SYSTEM = `${SYSTEM_PROMPT}
 
-You can control the Vista Launcher by calling the provided tools (a safe command
+You can control the NeverSoft OS by calling the provided tools (a safe command
 sandbox). Use them when the user asks to change the look or do something on the
 device — e.g. apply themes, open/pin apps, toggle widgets, change wallpaper, or
 report status. Prefer doing the action over describing it. Keep replies short.

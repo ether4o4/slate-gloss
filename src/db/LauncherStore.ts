@@ -45,7 +45,7 @@ export const WIDGET_CATALOG: {id: string; name: string}[] = [
   {id: 'notes', name: 'Notes'},
 ];
 
-const KEY = '@vista_launcher_state_v1';
+const KEY = '@nsos_launcher_state_v1';
 const MAX_RECENTS = 8;
 
 export const DEFAULT_TASKBAR_COLORS = ['rgba(40,73,120,0.78)', 'rgba(15,36,64,0.92)'];

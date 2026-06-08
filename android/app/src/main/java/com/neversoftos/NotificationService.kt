@@ -1,4 +1,4 @@
-package com.vistalauncher
+package com.neversoftos
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification

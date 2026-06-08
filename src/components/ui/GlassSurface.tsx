@@ -1,19 +1,19 @@
 import React from 'react';
 import {View, StyleSheet, type ViewStyle, type StyleProp} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 
 interface GlassSurfaceProps {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   radius?: number;
-  /** Adds the bright Aero gloss highlight across the top half. */
+  /** Adds the bright glossy highlight across the top half. */
   sheen?: boolean;
 }
 
 /**
  * A cheap frosted-glass panel: a translucent gradient fill, a hairline border
- * and an optional top "sheen" highlight that gives the Vista Aero gloss.
+ * and an optional top "sheen" highlight that gives the glass gloss.
  * Static gradients only — nothing animates, so it costs no battery while idle.
  */
 export const GlassSurface: React.FC<GlassSurfaceProps> = ({
@@ -25,14 +25,14 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
   return (
     <View style={[styles.wrapper, {borderRadius: radius}, style]}>
       <LinearGradient
-        colors={Vista.glassFill}
+        colors={Theme.glassFill}
         start={{x: 0, y: 0}}
         end={{x: 0, y: 1}}
         style={[StyleSheet.absoluteFill, {borderRadius: radius}]}
       />
       {sheen && (
         <LinearGradient
-          colors={Vista.glassSheen}
+          colors={Theme.glassSheen}
           start={{x: 0, y: 0}}
           end={{x: 0, y: 1}}
           style={[styles.sheen, {borderTopLeftRadius: radius, borderTopRightRadius: radius}]}
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   border: {
     ...StyleSheet.absoluteFillObject,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Vista.border,
+    borderColor: Theme.border,
   },
 });
 

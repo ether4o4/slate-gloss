@@ -149,6 +149,6 @@ export const dismissNotification = (key: string): void => native?.dismissNotific
 export const onNotificationsChanged = (cb: () => void): (() => void) => {
   if (!native) return () => {};
   const emitter = new NativeEventEmitter(NativeModules.LauncherModule);
-  const sub = emitter.addListener('VistaNotificationsChanged', cb);
+  const sub = emitter.addListener('NsosNotificationsChanged', cb);
   return () => sub.remove();
 };

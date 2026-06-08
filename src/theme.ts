@@ -1,12 +1,12 @@
 /**
- * Vista Aero design tokens. Tuned for a glossy look with cheap rendering:
+ * glass design tokens. Tuned for a glossy look with cheap rendering:
  * translucent fills + linear gradients instead of per-frame blur, so there is
  * no continuous GPU cost.
  */
 const grad = (...colors: string[]): string[] => colors;
 
-export const Vista = {
-  // Aero blue family
+export const Theme = {
+  // Blue family
   aurora: grad('#3b6ea5', '#27496d', '#0f2440'),
   vignette: grad('rgba(10,22,40,0)', 'rgba(8,18,33,0.45)'),
 
@@ -28,7 +28,7 @@ export const Vista = {
 
 /** Selectable taskbar gradients for the Personalize panel. */
 export const TASKBAR_PRESETS: {name: string; colors: string[]}[] = [
-  {name: 'Aero Blue', colors: ['rgba(40,73,120,0.78)', 'rgba(15,36,64,0.92)']},
+  {name: 'Slate Blue', colors: ['rgba(40,73,120,0.78)', 'rgba(15,36,64,0.92)']},
   {name: 'Graphite', colors: ['rgba(62,64,72,0.85)', 'rgba(20,21,26,0.95)']},
   {name: 'Obsidian', colors: ['rgba(24,24,26,0.9)', 'rgba(0,0,0,0.96)']},
   {name: 'Emerald', colors: ['rgba(22,92,70,0.82)', 'rgba(8,42,30,0.94)']},

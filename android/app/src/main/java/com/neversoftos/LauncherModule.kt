@@ -1,4 +1,4 @@
-package com.vistalauncher
+package com.neversoftos
 
 import android.app.Activity
 import android.app.ActivityManager
@@ -35,7 +35,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 
 /**
- * Native bridge for the Vista launcher: enumerate/launch apps, manage the
+ * Native bridge for the NeverSoft OS: enumerate/launch apps, manage the
  * default-home role, change the wallpaper, read battery, and surface system
  * notifications. Everything runs on demand — no background polling.
  */
@@ -483,7 +483,7 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
       try {
         if (c.hasActiveReactInstance()) {
           c.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-              .emit("VistaNotificationsChanged", null)
+              .emit("NsosNotificationsChanged", null)
         }
       } catch (e: Exception) {
         // ignore

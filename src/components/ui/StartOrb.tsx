@@ -1,7 +1,7 @@
 import React, {useRef} from 'react';
 import {Animated, Image, Pressable, StyleSheet, Text, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 
 interface StartOrbProps {
   size?: number;
@@ -12,7 +12,7 @@ interface StartOrbProps {
 }
 
 /**
- * The glossy Vista "pearl" start orb — or a custom image if the user picked one.
+ * The glossy "pearl" start orb — or a custom image if the user picked one.
  * The only animation is a quick spring on press (native driver), so it never
  * runs while idle.
  */
@@ -35,7 +35,7 @@ export const StartOrb: React.FC<StartOrbProps> = ({size = 56, active = false, on
           </View>
         ) : (
           <LinearGradient
-            colors={active ? Vista.orbActive : Vista.orb}
+            colors={active ? Theme.orbActive : Theme.orb}
             start={{x: 0.2, y: 0}}
             end={{x: 0.8, y: 1}}
             style={[styles.orb, {width: size, height: size, borderRadius: size / 2}]}>

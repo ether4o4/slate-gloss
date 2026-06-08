@@ -1,6 +1,6 @@
 # NeverSoft OS
 
-**NeverSoft OS** (NSOS) — a glossy Windows Vista–style **home-screen launcher**
+**NeverSoft OS** (NSOS) — a glossy glassmorphism **home-screen launcher**
 for Android by **NeverSoft Services**, built with React Native. A wallpaper
 desktop with placeable icons, an operational Recycle Bin, gadgets, a two-pane
 Start menu, a taskbar with a calendar/notification flyout, and **Swarm** — a
@@ -8,11 +8,11 @@ built-in AI assistant (free Groq by default).
 
 ## 📥 Download the APK
 
-[![Download the APK](https://img.shields.io/badge/⬇%20DOWNLOAD-NSOS%20APK-e2574c?style=for-the-badge&logo=android&logoColor=white)](https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk)
+[![Download the APK](https://img.shields.io/badge/⬇%20DOWNLOAD-NSOS%20APK-e2574c?style=for-the-badge&logo=android&logoColor=white)](https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/neversoft-os.apk)
 
 **Rolling link (always the newest build):**
 
-➡️ **https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk**
+➡️ **https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/neversoft-os.apk**
 
 > Public repo — the link downloads directly on any device, no login required.
 > Open it in a browser (not an in-app webview) so it downloads cleanly.
@@ -73,7 +73,7 @@ minute.
 ```
 NeverSoft-OS/
 ├── android/                      # Android native project (RN 0.73 template)
-│   └── app/src/main/java/com/vistalauncher/
+│   └── app/src/main/java/com/neversoftos/
 │       ├── MainActivity.kt
 │       ├── MainApplication.kt
 │       ├── LauncherModule.kt      # list/launch apps, default-launcher control
@@ -81,7 +81,7 @@ NeverSoft-OS/
 ├── src/
 │   ├── components/
 │   │   ├── SwarmChatWindow.tsx
-│   │   └── vista/                 # Taskbar, StartOrb, StartMenu, Desktop, Personalize, …
+│   │   └── ui/                 # Taskbar, StartOrb, StartMenu, Desktop, Personalize, …
 │   ├── api/{DeepSeekService,Weather}.ts
 │   ├── ai/tools.ts                # Swarm command sandbox + secret themes
 │   ├── db/{ChatPersistence,Settings,LauncherStore}.ts
@@ -98,7 +98,7 @@ NeverSoft-OS/
 
 ### GitHub Actions (recommended)
 Push to `main` or any `claude/**` branch. CI builds the APK and republishes it to
-the rolling release URL above (it also uploads a `vista-launcher-apk` artifact on
+the rolling release URL above (it also uploads a `neversoft-os-apk` artifact on
 every run, including PRs).
 
 ### Local build
@@ -132,12 +132,12 @@ through a backend proxy rather than shipping a key on-device.
 
 ## ⬇️ Download NeverSoft OS (always the latest build)
 
-[![Download the APK](https://img.shields.io/badge/⬇%20DOWNLOAD-NSOS%20APK-e2574c?style=for-the-badge&logo=android&logoColor=white)](https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk)
+[![Download the APK](https://img.shields.io/badge/⬇%20DOWNLOAD-NSOS%20APK-e2574c?style=for-the-badge&logo=android&logoColor=white)](https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/neversoft-os.apk)
 &nbsp;
 [![Latest build](https://img.shields.io/github/v/release/ether4o4/NeverSoft-OS?style=for-the-badge&label=build&color=222)](https://github.com/ether4o4/NeverSoft-OS/releases/latest)
 
 **Direct link (auto-updates to the newest build):**
-👉 https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/vista-launcher.apk
+👉 https://github.com/ether4o4/NeverSoft-OS/releases/latest/download/neversoft-os.apk
 
 **How to install on Android:**
 1. Open the link above **in a browser** (Chrome), not an in-app webview.

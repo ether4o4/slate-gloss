@@ -1,7 +1,7 @@
 import React from 'react';
 import {Image, StyleSheet, Text, View, type StyleProp, type ViewStyle} from 'react-native';
 import type {AppInfo} from '../../native/Launcher';
-import {Vista} from '../../theme';
+import {Theme} from '../../theme';
 
 export const AppIconImage: React.FC<{
   app?: AppInfo;
@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  letter: {color: Vista.text, fontWeight: '700'},
+  letter: {color: Theme.text, fontWeight: '700'},
 });
 
 export default AppIconImage;

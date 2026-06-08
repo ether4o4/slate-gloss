@@ -1,4 +1,4 @@
-package com.vistalauncher
+package com.neversoftos
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
