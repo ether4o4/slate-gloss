@@ -1,4 +1,9 @@
-import {NativeModules, UIManager, requireNativeComponent, Platform} from 'react-native';
+import {
+  NativeModules,
+  UIManager,
+  requireNativeComponent,
+  Platform,
+} from 'react-native';
 
 const native: any = NativeModules.LauncherModule;
 const COMPONENT = 'WidgetHostView';
@@ -23,7 +28,9 @@ export const WidgetHostView: any = widgetHostAvailable
 
 /** Opens the system widget picker; resolves the bound widget's meta, or null. */
 export const pickWidget = async (): Promise<HostedWidgetMeta | null> => {
-  if (!native?.pickWidget) return null;
+  if (!native?.pickWidget) {
+    return null;
+  }
   try {
     return await native.pickWidget();
   } catch (e) {

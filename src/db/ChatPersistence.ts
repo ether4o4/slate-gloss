@@ -46,7 +46,7 @@ export const appendMessage = async (
   role: StoredRole,
   content: string,
 ): Promise<StoredMessage[]> => {
-  const next = [...current, {role, content, timestamp: Date.now()}];
+  const next = [...current, { role, content, timestamp: Date.now() }];
   await saveMessages(next);
   return next;
 };

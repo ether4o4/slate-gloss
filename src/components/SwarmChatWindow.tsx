@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,16 +14,20 @@ import {
   Modal,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {sendSwarm, type ToolExecutor, type ToolCallRecord} from '../api/DeepSeekService';
+import {
+  sendSwarm,
+  type ToolExecutor,
+  type ToolCallRecord,
+} from '../api/DeepSeekService';
 import {
   getMessages,
   appendMessage,
   clearHistory,
   type StoredMessage,
 } from '../db/ChatPersistence';
-import {getApiKey, setApiKey, hasApiKey} from '../db/Settings';
-import {PROVIDER_NAME, PROVIDER_KEY_URL} from '../config';
-import {SWARM_CHEATSHEET} from '../ai/tools';
+import { getApiKey, setApiKey, hasApiKey } from '../db/Settings';
+import { PROVIDER_NAME, PROVIDER_KEY_URL } from '../config';
+import { SWARM_CHEATSHEET } from '../ai/tools';
 
 const formatCmd = (c: ToolCallRecord): string => {
   const args = Object.entries(c.args || {})
@@ -33,13 +37,16 @@ const formatCmd = (c: ToolCallRecord): string => {
   return `▸ ${c.name}(${args}) → ${result}`;
 };
 
-const SUGGESTIONS: {label: string; prompt: string}[] = [
-  {label: '🎨 Make the taskbar Matrix', prompt: 'Make the taskbar the Matrix theme'},
-  {label: '✦ Surprise me — secret theme', prompt: 'Give me a secret theme'},
-  {label: '📷 Open the camera', prompt: 'Open the camera'},
-  {label: '🔋 Battery & RAM?', prompt: "What's my battery and RAM usage?"},
-  {label: '📌 Pin Chrome', prompt: 'Pin Chrome'},
-  {label: '🖼️ Change my wallpaper', prompt: 'Change my wallpaper'},
+const SUGGESTIONS: { label: string; prompt: string }[] = [
+  {
+    label: '🎨 Make the taskbar Matrix',
+    prompt: 'Make the taskbar the Matrix theme',
+  },
+  { label: '✦ Surprise me — secret theme', prompt: 'Give me a secret theme' },
+  { label: '📷 Open the camera', prompt: 'Open the camera' },
+  { label: '🔋 Battery & RAM?', prompt: "What's my battery and RAM usage?" },
+  { label: '📌 Pin Chrome', prompt: 'Pin Chrome' },
+  { label: '🖼️ Change my wallpaper', prompt: 'Change my wallpaper' },
 ];
 
 const SwarmChatWindow = ({
@@ -60,7 +67,9 @@ const SwarmChatWindow = ({
   const listRef = useRef<FlatList<StoredMessage>>(null);
 
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', e => setKb(e.endCoordinates.height));
+    const show = Keyboard.addListener('keyboardDidShow', e =>
+      setKb(e.endCoordinates.height),
+    );
     const hide = Keyboard.addListener('keyboardDidHide', () => setKb(0));
     return () => {
       show.remove();
@@ -78,7 +87,9 @@ const SwarmChatWindow = ({
   }, [refreshKeyStatus]);
 
   const scrollToEnd = useCallback(() => {
-    requestAnimationFrame(() => listRef.current?.scrollToEnd({animated: true}));
+    requestAnimationFrame(() =>
+      listRef.current?.scrollToEnd({ animated: true }),
+    );
   }, []);
 
   const openSettings = useCallback(async () => {
@@ -113,8 +124,11 @@ const SwarmChatWindow = ({
     try {
       const apiHistory = afterUser
         .filter(m => m.role === 'user' || m.role === 'assistant')
-        .map(m => ({role: m.role as 'user' | 'assistant', content: m.content}));
-      const {content, calls} = await sendSwarm(apiHistory, executeTool);
+        .map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        }));
+      const { content, calls } = await sendSwarm(apiHistory, executeTool);
 
       let list = afterUser;
       for (const c of calls) {
@@ -129,7 +143,11 @@ const SwarmChatWindow = ({
       scrollToEnd();
     } catch (error: any) {
       const msg = error?.message ?? 'Something went wrong. Please try again.';
-      const afterError = await appendMessage(afterUser, 'assistant', `⚠️ ${msg}`);
+      const afterError = await appendMessage(
+        afterUser,
+        'assistant',
+        `⚠️ ${msg}`,
+      );
       setMessages(afterError);
       scrollToEnd();
       refreshKeyStatus();
@@ -145,7 +163,7 @@ const SwarmChatWindow = ({
       return;
     }
     Alert.alert('Clear chat', 'Delete the entire conversation?', [
-      {text: 'Cancel', style: 'cancel'},
+      { text: 'Cancel', style: 'cancel' },
       {
         text: 'Clear',
         style: 'destructive',
@@ -170,7 +188,10 @@ const SwarmChatWindow = ({
           <Text style={styles.headerTitle}>Swarm</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setCheatOpen(true)} hitSlop={hitSlop}>
+          <TouchableOpacity
+            onPress={() => setCheatOpen(true)}
+            hitSlop={hitSlop}
+          >
             <Text style={styles.headerAction}>?</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={openSettings} hitSlop={hitSlop}>
@@ -190,7 +211,7 @@ const SwarmChatWindow = ({
         style={styles.list}
         data={messages}
         keyExtractor={(item, index) => `${item.timestamp}-${index}`}
-        renderItem={({item}) => {
+        renderItem={({ item }) => {
           if (item.role === 'cmd') {
             return (
               <View style={styles.cmdRow}>
@@ -203,12 +224,14 @@ const SwarmChatWindow = ({
               style={[
                 styles.messageRow,
                 item.role === 'user' ? styles.rowUser : styles.rowAi,
-              ]}>
+              ]}
+            >
               <View
                 style={[
                   styles.messageBubble,
                   item.role === 'user' ? styles.userBubble : styles.aiBubble,
-                ]}>
+                ]}
+              >
                 <Text style={styles.messageText}>{item.content}</Text>
               </View>
             </View>
@@ -221,8 +244,8 @@ const SwarmChatWindow = ({
             <Text style={styles.emptyTitle}>Hey, I'm Swarm</Text>
             <Text style={styles.emptySubtitle}>
               I live inside NeverSoft OS and I can actually run your launcher —
-              change themes, open & pin apps, toggle widgets, set your wallpaper,
-              and more. Just tell me what you want.
+              change themes, open & pin apps, toggle widgets, set your
+              wallpaper, and more. Just tell me what you want.
             </Text>
 
             {keyConfigured ? (
@@ -231,7 +254,8 @@ const SwarmChatWindow = ({
                   <TouchableOpacity
                     key={s.prompt}
                     style={styles.suggestChip}
-                    onPress={() => send(s.prompt)}>
+                    onPress={() => send(s.prompt)}
+                  >
                     <Text style={styles.suggestText}>{s.label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -239,10 +263,16 @@ const SwarmChatWindow = ({
             ) : (
               <>
                 <Text style={styles.emptyHint}>
-                  First, add a free {PROVIDER_NAME} key (grab one at {PROVIDER_KEY_URL}).
+                  First, add a free {PROVIDER_NAME} key (grab one at{' '}
+                  {PROVIDER_KEY_URL}).
                 </Text>
-                <TouchableOpacity style={styles.ctaButton} onPress={openSettings}>
-                  <Text style={styles.ctaText}>Add your {PROVIDER_NAME} API key</Text>
+                <TouchableOpacity
+                  style={styles.ctaButton}
+                  onPress={openSettings}
+                >
+                  <Text style={styles.ctaText}>
+                    Add your {PROVIDER_NAME} API key
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
@@ -263,7 +293,9 @@ const SwarmChatWindow = ({
           style={styles.input}
           value={input}
           onChangeText={setInput}
-          placeholder={keyConfigured ? 'Type a message…' : 'Add an API key to begin…'}
+          placeholder={
+            keyConfigured ? 'Type a message…' : 'Add an API key to begin…'
+          }
           placeholderTextColor="#7d93ab"
           multiline
           onSubmitEditing={handleSend}
@@ -271,22 +303,27 @@ const SwarmChatWindow = ({
           blurOnSubmit
         />
         <TouchableOpacity
-          style={[styles.sendButton, (!input.trim() || loading) && styles.sendDisabled]}
+          style={[
+            styles.sendButton,
+            (!input.trim() || loading) && styles.sendDisabled,
+          ]}
           onPress={handleSend}
-          disabled={!input.trim() || loading}>
+          disabled={!input.trim() || loading}
+        >
           <Text style={styles.sendButtonText}>Send</Text>
         </TouchableOpacity>
       </View>
 
       {/* Spacer that lifts the input above the keyboard (window doesn't resize). */}
-      <View style={{height: kb}} />
+      <View style={{ height: kb }} />
 
       {/* API key settings */}
       <Modal
         visible={settingsOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setSettingsOpen(false)}>
+        onRequestClose={() => setSettingsOpen(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>{PROVIDER_NAME} API key</Text>
@@ -320,19 +357,27 @@ const SwarmChatWindow = ({
         visible={cheatOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setCheatOpen(false)}>
+        onRequestClose={() => setCheatOpen(false)}
+      >
         <View style={styles.cheatOverlay}>
           <View style={styles.cheatCard}>
             <View style={styles.cheatHeader}>
               <Text style={styles.modalTitle}>What you can ask Swarm</Text>
-              <TouchableOpacity onPress={() => setCheatOpen(false)} hitSlop={hitSlop}>
+              <TouchableOpacity
+                onPress={() => setCheatOpen(false)}
+                hitSlop={hitSlop}
+              >
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.cheatHint}>
-              Tap a command to drop it in the box, or long-press the text to copy.
+              Tap a command to drop it in the box, or long-press the text to
+              copy.
             </Text>
-            <ScrollView style={styles.cheatScroll} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.cheatScroll}
+              showsVerticalScrollIndicator={false}
+            >
               {SWARM_CHEATSHEET.map(group => (
                 <View key={group.category} style={styles.cheatGroup}>
                   <Text style={styles.cheatCategory}>{group.category}</Text>
@@ -346,7 +391,8 @@ const SwarmChatWindow = ({
                         onPress={() => {
                           setInput(item);
                           setCheatOpen(false);
-                        }}>
+                        }}
+                      >
                         <Text style={styles.cheatUseText}>Use</Text>
                       </TouchableOpacity>
                     </View>
@@ -361,11 +407,11 @@ const SwarmChatWindow = ({
   );
 };
 
-const hitSlop = {top: 12, bottom: 12, left: 12, right: 12};
+const hitSlop = { top: 12, bottom: 12, left: 12, right: 12 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1},
-  list: {flex: 1},
+  container: { flex: 1 },
+  list: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -376,26 +422,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(255,255,255,0.15)',
   },
-  headerLeft: {flexDirection: 'row', alignItems: 'center', gap: 10},
-  dot: {width: 10, height: 10, borderRadius: 5, backgroundColor: '#4ade80'},
-  dotOff: {backgroundColor: '#e2a14c'},
-  headerTitle: {color: '#fff', fontSize: 18, fontWeight: '700'},
-  headerActions: {flexDirection: 'row', alignItems: 'center', gap: 18},
-  headerAction: {color: '#9cc2ff', fontSize: 16, fontWeight: '600'},
-  closeButton: {color: '#fff', fontSize: 18, fontWeight: '600'},
-  listContent: {padding: 16, flexGrow: 1},
-  messageRow: {marginBottom: 10, flexDirection: 'row'},
-  rowUser: {justifyContent: 'flex-end'},
-  rowAi: {justifyContent: 'flex-start'},
-  messageBubble: {paddingVertical: 10, paddingHorizontal: 14, borderRadius: 16, maxWidth: '82%'},
-  userBubble: {backgroundColor: '#2f7bf6', borderBottomRightRadius: 4},
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#4ade80' },
+  dotOff: { backgroundColor: '#e2a14c' },
+  headerTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  headerAction: { color: '#9cc2ff', fontSize: 16, fontWeight: '600' },
+  closeButton: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  listContent: { padding: 16, flexGrow: 1 },
+  messageRow: { marginBottom: 10, flexDirection: 'row' },
+  rowUser: { justifyContent: 'flex-end' },
+  rowAi: { justifyContent: 'flex-start' },
+  messageBubble: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    maxWidth: '82%',
+  },
+  userBubble: { backgroundColor: '#2f7bf6', borderBottomRightRadius: 4 },
   aiBubble: {
     backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.18)',
     borderBottomLeftRadius: 4,
   },
-  messageText: {color: '#fff', fontSize: 15, lineHeight: 21},
+  messageText: { color: '#fff', fontSize: 15, lineHeight: 21 },
   cmdRow: {
     backgroundColor: 'rgba(0,0,0,0.35)',
     borderRadius: 8,
@@ -405,13 +456,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginBottom: 8,
   },
-  cmdText: {color: '#9be8b0', fontSize: 12.5, fontFamily: Platform.OS === 'android' ? 'monospace' : 'Menlo'},
-  empty: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28},
-  emptyWave: {fontSize: 40, marginBottom: 6},
-  emptyTitle: {color: '#fff', fontSize: 22, fontWeight: '700', marginBottom: 8},
-  emptySubtitle: {color: '#9fb4c9', fontSize: 14, textAlign: 'center', lineHeight: 20},
-  emptyHint: {color: '#cdd9e6', fontSize: 13, textAlign: 'center', marginTop: 16},
-  suggestWrap: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 18},
+  cmdText: {
+    color: '#9be8b0',
+    fontSize: 12.5,
+    fontFamily: Platform.OS === 'android' ? 'monospace' : 'Menlo',
+  },
+  empty: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 28,
+  },
+  emptyWave: { fontSize: 40, marginBottom: 6 },
+  emptyTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    color: '#9fb4c9',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  emptyHint: {
+    color: '#cdd9e6',
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 16,
+  },
+  suggestWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 18,
+  },
   suggestChip: {
     backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: StyleSheet.hairlineWidth,
@@ -420,7 +501,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
   },
-  suggestText: {color: '#eaf2ff', fontSize: 13},
+  suggestText: { color: '#eaf2ff', fontSize: 13 },
   ctaButton: {
     marginTop: 18,
     backgroundColor: '#2f7bf6',
@@ -428,9 +509,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 20,
   },
-  ctaText: {color: '#fff', fontWeight: '700'},
-  typingRow: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingBottom: 6},
-  typingText: {color: '#9cc2ff', fontSize: 13},
+  ctaText: { color: '#fff', fontWeight: '700' },
+  typingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 6,
+  },
+  typingText: { color: '#9cc2ff', fontSize: 13 },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -459,8 +546,8 @@ const styles = StyleSheet.create({
     height: 42,
     justifyContent: 'center',
   },
-  sendDisabled: {opacity: 0.45},
-  sendButtonText: {color: '#fff', fontWeight: '700', fontSize: 15},
+  sendDisabled: { opacity: 0.45 },
+  sendButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.55)',
@@ -474,8 +561,13 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.2)',
   },
-  modalTitle: {color: '#fff', fontSize: 18, fontWeight: '700'},
-  modalSubtitle: {color: '#9fb4c9', fontSize: 13, marginTop: 6, lineHeight: 18},
+  modalTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  modalSubtitle: {
+    color: '#9fb4c9',
+    fontSize: 13,
+    marginTop: 6,
+    lineHeight: 18,
+  },
   modalInput: {
     marginTop: 16,
     backgroundColor: 'rgba(0,0,0,0.3)',
@@ -487,11 +579,27 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.2)',
   },
-  modalActions: {flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 24, marginTop: 18},
-  modalCancel: {color: '#9cc2ff', fontSize: 15, fontWeight: '600'},
-  modalSave: {backgroundColor: '#2f7bf6', paddingHorizontal: 22, paddingVertical: 10, borderRadius: 20},
-  modalSaveText: {color: '#fff', fontSize: 15, fontWeight: '700'},
-  cheatOverlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 18},
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 24,
+    marginTop: 18,
+  },
+  modalCancel: { color: '#9cc2ff', fontSize: 15, fontWeight: '600' },
+  modalSave: {
+    backgroundColor: '#2f7bf6',
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  modalSaveText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  cheatOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: 18,
+  },
   cheatCard: {
     backgroundColor: '#16314f',
     borderRadius: 18,
@@ -500,11 +608,26 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.2)',
   },
-  cheatHeader: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'},
-  cheatHint: {color: '#9fb4c9', fontSize: 12.5, marginTop: 6, marginBottom: 8},
-  cheatScroll: {flexGrow: 0},
-  cheatGroup: {marginTop: 10},
-  cheatCategory: {color: '#9cc2ff', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6},
+  cheatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cheatHint: {
+    color: '#9fb4c9',
+    fontSize: 12.5,
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  cheatScroll: { flexGrow: 0 },
+  cheatGroup: { marginTop: 10 },
+  cheatCategory: {
+    color: '#9cc2ff',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
   cheatRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -514,9 +637,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  cheatCmd: {color: '#fff', fontSize: 14, flex: 1},
-  cheatUse: {backgroundColor: '#2f7bf6', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 6},
-  cheatUseText: {color: '#fff', fontSize: 13, fontWeight: '700'},
+  cheatCmd: { color: '#fff', fontSize: 14, flex: 1 },
+  cheatUse: {
+    backgroundColor: '#2f7bf6',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  cheatUseText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 });
 
 export default SwarmChatWindow;

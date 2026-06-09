@@ -1,4 +1,4 @@
-import {NativeModules, NativeEventEmitter} from 'react-native';
+import { NativeModules, NativeEventEmitter } from 'react-native';
 
 export interface AppInfo {
   packageName: string;
@@ -53,7 +53,9 @@ const native: LauncherNativeModule | undefined = NativeModules.LauncherModule;
 export const isLauncherAvailable = (): boolean => native != null;
 
 export const getApps = async (): Promise<AppInfo[]> => {
-  if (!native) return [];
+  if (!native) {
+    return [];
+  }
   try {
     return await native.getApps();
   } catch (e) {
@@ -70,11 +72,15 @@ export const launchApp = async (packageName: string): Promise<void> => {
   }
 };
 
-export const openAppInfo = (packageName: string): void => native?.openAppInfo(packageName);
-export const uninstallApp = (packageName: string): void => native?.uninstallApp(packageName);
+export const openAppInfo = (packageName: string): void =>
+  native?.openAppInfo(packageName);
+export const uninstallApp = (packageName: string): void =>
+  native?.uninstallApp(packageName);
 
 export const isDefaultLauncher = async (): Promise<boolean> => {
-  if (!native) return false;
+  if (!native) {
+    return false;
+  }
   try {
     return await native.isDefaultLauncher();
   } catch {
@@ -82,10 +88,13 @@ export const isDefaultLauncher = async (): Promise<boolean> => {
   }
 };
 
-export const requestDefaultLauncher = (): void => native?.requestDefaultLauncher();
+export const requestDefaultLauncher = (): void =>
+  native?.requestDefaultLauncher();
 
 export const chooseWallpaper = async (): Promise<boolean> => {
-  if (!native) return false;
+  if (!native) {
+    return false;
+  }
   try {
     return await native.chooseWallpaper();
   } catch (e) {
@@ -96,7 +105,9 @@ export const chooseWallpaper = async (): Promise<boolean> => {
 
 /** Lets the user pick an image for the Start button; returns a file:// uri ('' if cancelled). */
 export const pickStartIcon = async (): Promise<string> => {
-  if (!native) return '';
+  if (!native) {
+    return '';
+  }
   try {
     return await native.pickStartIcon();
   } catch (e) {
@@ -106,16 +117,20 @@ export const pickStartIcon = async (): Promise<string> => {
 };
 
 export const getBatteryInfo = async (): Promise<BatteryInfo> => {
-  if (!native) return {level: 0, charging: false};
+  if (!native) {
+    return { level: 0, charging: false };
+  }
   try {
     return await native.getBatteryInfo();
   } catch {
-    return {level: 0, charging: false};
+    return { level: 0, charging: false };
   }
 };
 
 export const getSystemInfo = async (): Promise<SystemInfo | null> => {
-  if (!native) return null;
+  if (!native) {
+    return null;
+  }
   try {
     return await native.getSystemInfo();
   } catch {
@@ -124,7 +139,9 @@ export const getSystemInfo = async (): Promise<SystemInfo | null> => {
 };
 
 export const isNotificationAccessEnabled = async (): Promise<boolean> => {
-  if (!native) return false;
+  if (!native) {
+    return false;
+  }
   try {
     return await native.isNotificationAccessEnabled();
   } catch {
@@ -135,10 +152,13 @@ export const isNotificationAccessEnabled = async (): Promise<boolean> => {
 export const openNotificationAccessSettings = (): void =>
   native?.openNotificationAccessSettings();
 
-export const openBatteryOptimization = (): void => native?.openBatteryOptimization();
+export const openBatteryOptimization = (): void =>
+  native?.openBatteryOptimization();
 
 export const getNotifications = async (): Promise<NotificationInfo[]> => {
-  if (!native) return [];
+  if (!native) {
+    return [];
+  }
   try {
     return await native.getNotifications();
   } catch {
@@ -146,11 +166,14 @@ export const getNotifications = async (): Promise<NotificationInfo[]> => {
   }
 };
 
-export const dismissNotification = (key: string): void => native?.dismissNotification(key);
+export const dismissNotification = (key: string): void =>
+  native?.dismissNotification(key);
 
 /** Subscribe to "notifications changed" events. Returns an unsubscribe fn. */
 export const onNotificationsChanged = (cb: () => void): (() => void) => {
-  if (!native) return () => {};
+  if (!native) {
+    return () => {};
+  }
   const emitter = new NativeEventEmitter(NativeModules.LauncherModule);
   const sub = emitter.addListener('NsosNotificationsChanged', cb);
   return () => sub.remove();

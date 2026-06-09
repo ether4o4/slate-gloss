@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {DEFAULT_API_KEY} from '../config';
+import { DEFAULT_API_KEY } from '../config';
 
 const API_KEY_STORAGE = '@nsos_swarm_api_key';
 

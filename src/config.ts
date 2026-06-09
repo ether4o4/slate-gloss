@@ -19,7 +19,6 @@ export const CHAT_MODEL = 'llama-3.3-70b-versatile';
 // Optional build-time default key (empty unless a private secrets file provides one).
 let bakedKey = '';
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   bakedKey = require('./secrets').DEFAULT_API_KEY ?? '';
 } catch {
   bakedKey = '';

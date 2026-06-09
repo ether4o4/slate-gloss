@@ -1,7 +1,7 @@
 import axios from 'axios';
-import {CHAT_BASE_URL, CHAT_MODEL, SYSTEM_PROMPT} from '../config';
-import {getApiKey} from '../db/Settings';
-import {SWARM_TOOLS, AI_THEMES} from '../ai/tools';
+import { CHAT_BASE_URL, CHAT_MODEL, SYSTEM_PROMPT } from '../config';
+import { getApiKey } from '../db/Settings';
+import { SWARM_TOOLS, AI_THEMES } from '../ai/tools';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -14,7 +14,10 @@ export interface ToolCallRecord {
   result: string;
 }
 
-export type ToolExecutor = (name: string, args: Record<string, any>) => Promise<string>;
+export type ToolExecutor = (
+  name: string,
+  args: Record<string, any>,
+) => Promise<string>;
 
 /** Raised when no API key has been configured yet. */
 export class MissingApiKeyError extends Error {
@@ -27,7 +30,7 @@ export class MissingApiKeyError extends Error {
 const client = axios.create({
   baseURL: CHAT_BASE_URL,
   timeout: 60000,
-  headers: {'Content-Type': 'application/json'},
+  headers: { 'Content-Type': 'application/json' },
 });
 
 /**
@@ -47,14 +50,14 @@ export const sendMessageToDeepSeek = async (
     const payload = {
       model: CHAT_MODEL,
       messages: [
-        {role: 'system', content: SYSTEM_PROMPT},
-        ...messages.map(({role, content}) => ({role, content})),
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...messages.map(({ role, content }) => ({ role, content })),
       ],
       stream: false,
     };
 
     const response = await client.post('/chat/completions', payload, {
-      headers: {Authorization: `Bearer ${apiKey}`},
+      headers: { Authorization: `Bearer ${apiKey}` },
     });
     const reply = response.data?.choices?.[0]?.message;
 
@@ -62,7 +65,7 @@ export const sendMessageToDeepSeek = async (
       throw new Error('Empty response from the AI provider');
     }
 
-    return {role: 'assistant', content: reply.content};
+    return { role: 'assistant', content: reply.content };
   } catch (error) {
     let message = 'Something went wrong talking to Swarm. Please try again.';
 
@@ -87,11 +90,21 @@ export const sendMessageToDeepSeek = async (
 
 const friendlyError = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
-    if (error.code === 'ECONNABORTED') return 'Request timed out. Try again.';
-    if (error.response?.status === 401) return 'Auth failed — check your API key in settings.';
-    if (error.response?.status === 429) return 'Rate limit reached. Wait a moment and retry.';
-    if (error.response?.data?.error?.message) return String(error.response.data.error.message);
-    if (!error.response) return 'No network connection.';
+    if (error.code === 'ECONNABORTED') {
+      return 'Request timed out. Try again.';
+    }
+    if (error.response?.status === 401) {
+      return 'Auth failed — check your API key in settings.';
+    }
+    if (error.response?.status === 429) {
+      return 'Rate limit reached. Wait a moment and retry.';
+    }
+    if (error.response?.data?.error?.message) {
+      return String(error.response.data.error.message);
+    }
+    if (!error.response) {
+      return 'No network connection.';
+    }
   }
   return 'Something went wrong talking to Swarm. Please try again.';
 };
@@ -111,15 +124,15 @@ Secret AI-only themes you can apply: ${AI_THEMES.map(t => t.name).join(', ')}.`;
 export const sendSwarm = async (
   history: ChatMessage[],
   execute: ToolExecutor,
-): Promise<{content: string; calls: ToolCallRecord[]}> => {
+): Promise<{ content: string; calls: ToolCallRecord[] }> => {
   const apiKey = await getApiKey();
   if (!apiKey) {
     throw new MissingApiKeyError();
   }
 
   const msgs: any[] = [
-    {role: 'system', content: AGENT_SYSTEM},
-    ...history.map(({role, content}) => ({role, content})),
+    { role: 'system', content: AGENT_SYSTEM },
+    ...history.map(({ role, content }) => ({ role, content })),
   ];
   const calls: ToolCallRecord[] = [];
 
@@ -127,11 +140,18 @@ export const sendSwarm = async (
     for (let step = 0; step < 5; step++) {
       const resp = await client.post(
         '/chat/completions',
-        {model: CHAT_MODEL, messages: msgs, tools: SWARM_TOOLS, tool_choice: 'auto'},
-        {headers: {Authorization: `Bearer ${apiKey}`}},
+        {
+          model: CHAT_MODEL,
+          messages: msgs,
+          tools: SWARM_TOOLS,
+          tool_choice: 'auto',
+        },
+        { headers: { Authorization: `Bearer ${apiKey}` } },
       );
       const m = resp.data?.choices?.[0]?.message;
-      if (!m) throw new Error('Empty response from the AI provider');
+      if (!m) {
+        throw new Error('Empty response from the AI provider');
+      }
       msgs.push(m);
 
       const toolCalls = m.tool_calls;
@@ -150,15 +170,15 @@ export const sendSwarm = async (
           } catch (e: any) {
             result = `error: ${e?.message ?? e}`;
           }
-          calls.push({name, args, result});
-          msgs.push({role: 'tool', tool_call_id: tc.id, content: result});
+          calls.push({ name, args, result });
+          msgs.push({ role: 'tool', tool_call_id: tc.id, content: result });
         }
         continue; // let the model react to the tool results
       }
 
-      return {content: typeof m.content === 'string' ? m.content : '', calls};
+      return { content: typeof m.content === 'string' ? m.content : '', calls };
     }
-    return {content: 'Done.', calls};
+    return { content: 'Done.', calls };
   } catch (error) {
     console.error('Swarm agent error:', error);
     throw new Error(friendlyError(error));

@@ -1,7 +1,7 @@
 import React from 'react';
-import {View, StyleSheet, type ViewStyle, type StyleProp} from 'react-native';
+import { View, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {Theme} from '../../theme';
+import { Theme } from '../../theme';
 
 interface GlassSurfaceProps {
   children?: React.ReactNode;
@@ -23,31 +23,44 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
   sheen = true,
 }) => {
   return (
-    <View style={[styles.wrapper, {borderRadius: radius}, style]}>
+    <View style={[styles.wrapper, { borderRadius: radius }, style]}>
       <LinearGradient
         colors={Theme.glassFill}
-        start={{x: 0, y: 0}}
-        end={{x: 0, y: 1}}
-        style={[StyleSheet.absoluteFill, {borderRadius: radius}]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
       />
       {sheen && (
         <LinearGradient
           colors={Theme.glassSheen}
-          start={{x: 0, y: 0}}
-          end={{x: 0, y: 1}}
-          style={[styles.sheen, {borderTopLeftRadius: radius, borderTopRightRadius: radius}]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={[
+            styles.sheen,
+            { borderTopLeftRadius: radius, borderTopRightRadius: radius },
+          ]}
           pointerEvents="none"
         />
       )}
-      <View style={[styles.border, {borderRadius: radius}]} pointerEvents="none" />
+      <View
+        style={[styles.border, { borderRadius: radius }]}
+        pointerEvents="none"
+      />
       {children}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: {overflow: 'hidden', backgroundColor: 'rgba(20,40,70,0.25)'},
-  sheen: {position: 'absolute', top: 0, left: 0, right: 0, height: '55%', opacity: 0.9},
+  wrapper: { overflow: 'hidden', backgroundColor: 'rgba(20,40,70,0.25)' },
+  sheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '55%',
+    opacity: 0.9,
+  },
   border: {
     ...StyleSheet.absoluteFillObject,
     borderWidth: StyleSheet.hairlineWidth,

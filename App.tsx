@@ -1,29 +1,27 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   AppState,
   Dimensions,
   Modal,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-import {Theme, TASKBAR_PRESETS} from './src/theme';
-import {AI_THEMES, cheatsheetText} from './src/ai/tools';
-import type {ToolExecutor} from './src/api/DeepSeekService';
-import {Desktop} from './src/components/ui/Desktop';
-import {Taskbar} from './src/components/ui/Taskbar';
-import {StartMenu} from './src/components/ui/StartMenu';
-import {SystemFlyout} from './src/components/ui/SystemFlyout';
-import {RecycleBin} from './src/components/ui/RecycleBin';
-import {Personalize} from './src/components/ui/Personalize';
-import {ContextMenu, type MenuItem} from './src/components/ui/ContextMenu';
-import {Tour} from './src/components/ui/Tour';
-import {hasApiKey} from './src/db/Settings';
+import { Theme, TASKBAR_PRESETS } from './src/theme';
+import { AI_THEMES, cheatsheetText } from './src/ai/tools';
+import type { ToolExecutor } from './src/api/DeepSeekService';
+import { Desktop } from './src/components/ui/Desktop';
+import { Taskbar } from './src/components/ui/Taskbar';
+import { StartMenu } from './src/components/ui/StartMenu';
+import { SystemFlyout } from './src/components/ui/SystemFlyout';
+import { RecycleBin } from './src/components/ui/RecycleBin';
+import { Personalize } from './src/components/ui/Personalize';
+import { ContextMenu, type MenuItem } from './src/components/ui/ContextMenu';
+import { Tour } from './src/components/ui/Tour';
+import { hasApiKey } from './src/db/Settings';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOUR_KEY = '@nsos_tour_done';
@@ -50,8 +48,8 @@ import {
   type BatteryInfo,
   type SystemInfo,
 } from './src/native/Launcher';
-import {getWeather, type Weather} from './src/api/Weather';
-import {pickWidget, removeHostedWidget} from './src/native/Widgets';
+import { getWeather, type Weather } from './src/api/Weather';
+import { pickWidget, removeHostedWidget } from './src/native/Widgets';
 import {
   loadState,
   saveState,
@@ -80,12 +78,15 @@ const CELL_H = 96;
 
 const App: React.FC = () => {
   const [apps, setApps] = useState<AppInfo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [state, setState] = useState<LauncherState | null>(null);
   const [isDefault, setIsDefault] = useState(false);
   const [notifications, setNotifications] = useState<NotificationInfo[]>([]);
   const [notifAccess, setNotifAccess] = useState(false);
-  const [battery, setBattery] = useState<BatteryInfo>({level: 0, charging: false});
+  const [battery, setBattery] = useState<BatteryInfo>({
+    level: 0,
+    charging: false,
+  });
   const [system, setSystem] = useState<SystemInfo | null>(null);
   const [weather, setWeather] = useState<Weather | null>(null);
 
@@ -94,7 +95,10 @@ const App: React.FC = () => {
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [recycleOpen, setRecycleOpen] = useState(false);
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
-  const [menu, setMenu] = useState<{title?: string; items: MenuItem[]} | null>(null);
+  const [menu, setMenu] = useState<{
+    title?: string;
+    items: MenuItem[];
+  } | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const [hasKey, setHasKey] = useState(false);
 
@@ -104,7 +108,7 @@ const App: React.FC = () => {
     const usableH = win.height - STATUS_BAR - TASKBAR_H - 16;
     const cols = Math.max(2, Math.floor(usableW / CELL_W));
     const rows = Math.max(3, Math.floor(usableH / CELL_H) - 1);
-    return {cols, rows};
+    return { cols, rows };
   }, []);
 
   const appsByPkg = useMemo(() => {
@@ -141,7 +145,9 @@ const App: React.FC = () => {
     refreshNotifications();
     // First launch → show the setup tour once.
     AsyncStorage.getItem(TOUR_KEY).then(done => {
-      if (done !== '1') setTourOpen(true);
+      if (done !== '1') {
+        setTourOpen(true);
+      }
     });
     const unsub = onNotificationsChanged(refreshNotifications);
     const appSub = AppState.addEventListener('change', s => {
@@ -164,14 +170,19 @@ const App: React.FC = () => {
 
   // ---- state mutation helper -------------------------------------------
 
-  const update = useCallback((producer: (s: LauncherState) => LauncherState) => {
-    setState(prev => {
-      if (!prev) return prev;
-      const next = producer(prev);
-      saveState(next);
-      return next;
-    });
-  }, []);
+  const update = useCallback(
+    (producer: (s: LauncherState) => LauncherState) => {
+      setState(prev => {
+        if (!prev) {
+          return prev;
+        }
+        const next = producer(prev);
+        saveState(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   const launch = useCallback(
     (pkg: string) => {
@@ -190,11 +201,24 @@ const App: React.FC = () => {
       setMenu({
         title: label,
         items: [
-          {label: 'Open', icon: '▶', onPress: () => launch(pkg)},
-          {label: isPinned ? 'Unpin from taskbar' : 'Pin to taskbar', icon: '📌', onPress: () => update(s => togglePin(s, pkg))},
-          {label: 'App info', icon: 'ⓘ', onPress: () => openAppInfo(pkg)},
-          {label: 'Remove from desktop', icon: '🗑️', onPress: () => update(s => recycleDesktopIcon(s, pkg))},
-          {label: 'Uninstall', icon: '⛔', danger: true, onPress: () => uninstallApp(pkg)},
+          { label: 'Open', icon: '▶', onPress: () => launch(pkg) },
+          {
+            label: isPinned ? 'Unpin from taskbar' : 'Pin to taskbar',
+            icon: '📌',
+            onPress: () => update(s => togglePin(s, pkg)),
+          },
+          { label: 'App info', icon: 'ⓘ', onPress: () => openAppInfo(pkg) },
+          {
+            label: 'Remove from desktop',
+            icon: '🗑️',
+            onPress: () => update(s => recycleDesktopIcon(s, pkg)),
+          },
+          {
+            label: 'Uninstall',
+            icon: '⛔',
+            danger: true,
+            onPress: () => uninstallApp(pkg),
+          },
         ],
       });
     },
@@ -208,11 +232,25 @@ const App: React.FC = () => {
       setMenu({
         title: label,
         items: [
-          {label: 'Open', icon: '▶', onPress: () => launch(pkg)},
-          {label: isPinned ? 'Unpin' : 'Pin to taskbar', icon: '📌', onPress: () => update(s => togglePin(s, pkg))},
-          {label: 'Add to desktop', icon: '➕', onPress: () => update(s => addToDesktop(s, pkg, grid.cols, grid.rows))},
-          {label: 'App info', icon: 'ⓘ', onPress: () => openAppInfo(pkg)},
-          {label: 'Uninstall', icon: '⛔', danger: true, onPress: () => uninstallApp(pkg)},
+          { label: 'Open', icon: '▶', onPress: () => launch(pkg) },
+          {
+            label: isPinned ? 'Unpin' : 'Pin to taskbar',
+            icon: '📌',
+            onPress: () => update(s => togglePin(s, pkg)),
+          },
+          {
+            label: 'Add to desktop',
+            icon: '➕',
+            onPress: () =>
+              update(s => addToDesktop(s, pkg, grid.cols, grid.rows)),
+          },
+          { label: 'App info', icon: 'ⓘ', onPress: () => openAppInfo(pkg) },
+          {
+            label: 'Uninstall',
+            icon: '⛔',
+            danger: true,
+            onPress: () => uninstallApp(pkg),
+          },
         ],
       });
     },
@@ -223,10 +261,22 @@ const App: React.FC = () => {
     setMenu({
       title: 'Desktop',
       items: [
-        {label: 'Open Start (apps)', icon: '⊞', onPress: () => setStartOpen(true)},
-        {label: 'Add a widget', icon: '🧩', onPress: () => addWidget()},
-        {label: 'Change wallpaper', icon: '🖼️', onPress: () => changeWallpaper()},
-        {label: 'Personalize', icon: '🎨', onPress: () => setPersonalizeOpen(true)},
+        {
+          label: 'Open Start (apps)',
+          icon: '⊞',
+          onPress: () => setStartOpen(true),
+        },
+        { label: 'Add a widget', icon: '🧩', onPress: () => addWidget() },
+        {
+          label: 'Change wallpaper',
+          icon: '🖼️',
+          onPress: () => changeWallpaper(),
+        },
+        {
+          label: 'Personalize',
+          icon: '🎨',
+          onPress: () => setPersonalizeOpen(true),
+        },
       ],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -238,10 +288,19 @@ const App: React.FC = () => {
       setMenu({
         title: label,
         items: [
-          {label: 'Open', icon: '▶', onPress: () => launch(pkg)},
-          {label: 'Unpin', icon: '📌', onPress: () => update(s => togglePin(s, pkg))},
-          {label: 'App info', icon: 'ⓘ', onPress: () => openAppInfo(pkg)},
-          {label: 'Uninstall', icon: '⛔', danger: true, onPress: () => uninstallApp(pkg)},
+          { label: 'Open', icon: '▶', onPress: () => launch(pkg) },
+          {
+            label: 'Unpin',
+            icon: '📌',
+            onPress: () => update(s => togglePin(s, pkg)),
+          },
+          { label: 'App info', icon: 'ⓘ', onPress: () => openAppInfo(pkg) },
+          {
+            label: 'Uninstall',
+            icon: '⛔',
+            danger: true,
+            onPress: () => uninstallApp(pkg),
+          },
         ],
       });
     },
@@ -259,13 +318,18 @@ const App: React.FC = () => {
     }
   }, [update]);
 
-  const resetStart = useCallback(() => update(s => setStartIcon(s, '')), [update]);
+  const resetStart = useCallback(
+    () => update(s => setStartIcon(s, '')),
+    [update],
+  );
 
   // ---- Real widget hosting ---------------------------------------------
 
   const addWidget = useCallback(async () => {
     const meta = await pickWidget();
-    if (!meta) return;
+    if (!meta) {
+      return;
+    }
     const screenW = Dimensions.get('window').width;
     const w = Math.max(120, Math.min(meta.minWidth || 160, screenW - 24));
     const h = Math.max(80, Math.min(meta.minHeight || 120, 420));
@@ -289,7 +353,8 @@ const App: React.FC = () => {
   );
 
   const moveWidget = useCallback(
-    (id: number, x: number, y: number) => update(s => moveDesktopWidget(s, id, x, y)),
+    (id: number, x: number, y: number) =>
+      update(s => moveDesktopWidget(s, id, x, y)),
     [update],
   );
 
@@ -298,7 +363,9 @@ const App: React.FC = () => {
   const findApp = useCallback(
     (q: string): AppInfo | undefined => {
       const s = (q || '').trim().toLowerCase();
-      if (!s) return undefined;
+      if (!s) {
+        return undefined;
+      }
       return (
         apps.find(a => a.label.toLowerCase() === s) ||
         apps.find(a => a.label.toLowerCase().startsWith(s)) ||
@@ -323,33 +390,54 @@ const App: React.FC = () => {
           const t =
             allThemes.find(x => x.name.toLowerCase() === want) ||
             allThemes.find(x => want && x.name.toLowerCase().includes(want));
-          if (!t) return `No theme "${args.name}". Options: ${allThemes.map(x => x.name).join(', ')}`;
+          if (!t) {
+            return `No theme "${args.name}". Options: ${allThemes
+              .map(x => x.name)
+              .join(', ')}`;
+          }
           update(s => setTaskbarColors(s, t.colors));
           return `Applied "${t.name}".`;
         }
         case 'launch_app': {
           const a = findApp(String(args.name || ''));
-          if (!a) return `No app matching "${args.name}".`;
+          if (!a) {
+            return `No app matching "${args.name}".`;
+          }
           launch(a.packageName);
           return `Launched ${a.label}.`;
         }
         case 'pin_app': {
           const a = findApp(String(args.name || ''));
-          if (!a) return `No app matching "${args.name}".`;
-          if (state?.pinned.includes(a.packageName)) return `${a.label} is already pinned.`;
+          if (!a) {
+            return `No app matching "${args.name}".`;
+          }
+          if (state?.pinned.includes(a.packageName)) {
+            return `${a.label} is already pinned.`;
+          }
           update(s => togglePin(s, a.packageName));
           return `Pinned ${a.label}.`;
         }
         case 'add_to_desktop': {
           const a = findApp(String(args.name || ''));
-          if (!a) return `No app matching "${args.name}".`;
+          if (!a) {
+            return `No app matching "${args.name}".`;
+          }
           update(s => addToDesktop(s, a.packageName, grid.cols, grid.rows));
           return `Added ${a.label} to the desktop.`;
         }
         case 'toggle_widget': {
           const id = String(args.id || '').toLowerCase();
-          const valid = ['calendar', 'notifications', 'weather', 'battery', 'system', 'notes'];
-          if (!valid.includes(id)) return `Unknown widget "${args.id}". Valid: ${valid.join(', ')}`;
+          const valid = [
+            'calendar',
+            'notifications',
+            'weather',
+            'battery',
+            'system',
+            'notes',
+          ];
+          if (!valid.includes(id)) {
+            return `Unknown widget "${args.id}". Valid: ${valid.join(', ')}`;
+          }
           const willEnable = !state?.widgets.includes(id);
           update(s => toggleWidget(s, id));
           return `${willEnable ? 'Enabled' : 'Disabled'} the ${id} widget.`;
@@ -364,15 +452,24 @@ const App: React.FC = () => {
           requestDefaultLauncher();
           return 'Prompted to set NeverSoft OS as the default launcher.';
         case 'get_status': {
-          const [b, sys] = await Promise.all([getBatteryInfo(), getSystemInfo()]);
+          const [b, sys] = await Promise.all([
+            getBatteryInfo(),
+            getSystemInfo(),
+          ]);
           const now = new Date();
           const parts = [
-            `Time ${now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`,
+            `Time ${now.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}`,
             `Battery ${b.level}%${b.charging ? ' charging' : ''}`,
             apps.length ? `${apps.length} apps installed` : '',
           ];
           if (sys) {
-            parts.push(`RAM ${sys.ramUsedPct}% used`, `Storage ${sys.storageUsedPct}% used`);
+            parts.push(
+              `RAM ${sys.ramUsedPct}% used`,
+              `Storage ${sys.storageUsedPct}% used`,
+            );
           }
           return parts.filter(Boolean).join(' · ');
         }
@@ -380,11 +477,22 @@ const App: React.FC = () => {
           return `Unknown command: ${name}`;
       }
     },
-    [allThemes, findApp, update, launch, state, grid, changeWallpaper, pickStart, apps],
+    [
+      allThemes,
+      findApp,
+      update,
+      launch,
+      state,
+      grid,
+      changeWallpaper,
+      pickStart,
+      apps,
+    ],
   );
 
   const pinnedApps = useMemo(
-    () => (state?.pinned ?? []).map(p => appsByPkg[p]).filter(Boolean) as AppInfo[],
+    () =>
+      (state?.pinned ?? []).map(p => appsByPkg[p]).filter(Boolean) as AppInfo[],
     [state, appsByPkg],
   );
 
@@ -399,8 +507,16 @@ const App: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-      <LinearGradient colors={Theme.vignette} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
+      <LinearGradient
+        colors={Theme.vignette}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
 
       <View style={styles.body}>
         <Desktop
@@ -414,7 +530,9 @@ const App: React.FC = () => {
           rows={grid.rows}
           onLaunch={launch}
           onIconMenu={desktopIconMenu}
-          onMoveIcon={(pkg, col, row) => update(s => moveDesktopIcon(s, pkg, col, row))}
+          onMoveIcon={(pkg, col, row) =>
+            update(s => moveDesktopIcon(s, pkg, col, row))
+          }
           onRecycle={pkg => update(s => recycleDesktopIcon(s, pkg))}
           onOpenRecycle={() => setRecycleOpen(true)}
           onMoveWidget={moveWidget}
@@ -496,7 +614,9 @@ const App: React.FC = () => {
         items={state.recycle}
         apps={appsByPkg}
         onClose={() => setRecycleOpen(false)}
-        onRestore={pkg => update(s => restoreFromRecycle(s, pkg, grid.cols, grid.rows))}
+        onRestore={pkg =>
+          update(s => restoreFromRecycle(s, pkg, grid.cols, grid.rows))
+        }
         onEmpty={() => update(s => emptyRecycle(s))}
         onUninstall={pkg => uninstallApp(pkg)}
       />
@@ -523,8 +643,12 @@ const App: React.FC = () => {
       <Modal
         visible={swarmOpen}
         animationType="slide"
-        onRequestClose={() => setSwarmOpen(false)}>
-        <SwarmChatWindow onClose={() => setSwarmOpen(false)} executeTool={executeTool} />
+        onRequestClose={() => setSwarmOpen(false)}
+      >
+        <SwarmChatWindow
+          onClose={() => setSwarmOpen(false)}
+          executeTool={executeTool}
+        />
       </Modal>
 
       <ContextMenu
@@ -553,10 +677,10 @@ const App: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  root: {flex: 1, backgroundColor: 'transparent'},
-  center: {alignItems: 'center', justifyContent: 'center'},
-  body: {flex: 1, paddingTop: STATUS_BAR, paddingBottom: TASKBAR_H},
-  taskbarDock: {position: 'absolute', left: 0, right: 0, bottom: 0},
+  root: { flex: 1, backgroundColor: 'transparent' },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  body: { flex: 1, paddingTop: STATUS_BAR, paddingBottom: TASKBAR_H },
+  taskbarDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
 
 export default App;

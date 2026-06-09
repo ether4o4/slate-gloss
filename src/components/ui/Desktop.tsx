@@ -1,10 +1,13 @@
-import React, {useCallback, useRef, useState} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
-import type {AppInfo} from '../../native/Launcher';
-import type {DesktopIcon as DesktopIconModel, DesktopWidget} from '../../db/LauncherStore';
-import {DesktopIcon} from './DesktopIcon';
-import {HostedWidget} from './HostedWidget';
-import {Theme} from '../../theme';
+import React, { useCallback, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type { AppInfo } from '../../native/Launcher';
+import type {
+  DesktopIcon as DesktopIconModel,
+  DesktopWidget,
+} from '../../db/LauncherStore';
+import { DesktopIcon } from './DesktopIcon';
+import { HostedWidget } from './HostedWidget';
+import { Theme } from '../../theme';
 
 interface Rect {
   x: number;
@@ -50,15 +53,19 @@ export const Desktop: React.FC<Props> = ({
   onRemoveWidget,
   onEmptyMenu,
 }) => {
-  const gridOrigin = useRef<Rect>({x: 0, y: 0, w: 0, h: 0});
-  const binRect = useRef<Rect>({x: 0, y: 0, w: 0, h: 0});
+  const gridOrigin = useRef<Rect>({ x: 0, y: 0, w: 0, h: 0 });
+  const binRect = useRef<Rect>({ x: 0, y: 0, w: 0, h: 0 });
   const gridRef = useRef<View>(null);
   const binRef = useRef<View>(null);
   const [binHot, setBinHot] = useState(false);
 
   const measure = useCallback(() => {
-    gridRef.current?.measureInWindow((x, y, w, h) => (gridOrigin.current = {x, y, w, h}));
-    binRef.current?.measureInWindow((x, y, w, h) => (binRect.current = {x, y, w, h}));
+    gridRef.current?.measureInWindow(
+      (x, y, w, h) => (gridOrigin.current = { x, y, w, h }),
+    );
+    binRef.current?.measureInWindow(
+      (x, y, w, h) => (binRect.current = { x, y, w, h }),
+    );
   }, []);
 
   const isOverBin = (px: number, py: number) => {
@@ -78,8 +85,14 @@ export const Desktop: React.FC<Props> = ({
         return;
       }
       const o = gridOrigin.current;
-      const col = Math.min(cols - 1, Math.max(0, Math.round((px - o.x - cellWidth / 2) / cellWidth)));
-      const row = Math.min(rows - 1, Math.max(0, Math.round((py - o.y - cellHeight / 2) / cellHeight)));
+      const col = Math.min(
+        cols - 1,
+        Math.max(0, Math.round((px - o.x - cellWidth / 2) / cellWidth)),
+      );
+      const row = Math.min(
+        rows - 1,
+        Math.max(0, Math.round((py - o.y - cellHeight / 2) / cellHeight)),
+      );
       onMoveIcon(pkg, col, row);
     },
     [cols, rows, cellWidth, cellHeight, onMoveIcon, onRecycle],
@@ -88,10 +101,19 @@ export const Desktop: React.FC<Props> = ({
   return (
     <View style={styles.fill} ref={gridRef} onLayout={measure}>
       {/* Long-press empty desktop space for the context menu. */}
-      <Pressable style={StyleSheet.absoluteFill} onLongPress={onEmptyMenu} delayLongPress={400} />
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onLongPress={onEmptyMenu}
+        delayLongPress={400}
+      />
 
       {widgets.map(w => (
-        <HostedWidget key={w.widgetId} widget={w} onMove={onMoveWidget} onRemove={onRemoveWidget} />
+        <HostedWidget
+          key={w.widgetId}
+          widget={w}
+          onMove={onMoveWidget}
+          onRemove={onRemoveWidget}
+        />
       ))}
 
       {icons.map(icon => {
@@ -133,9 +155,15 @@ export const Desktop: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
-  fill: {flex: 1},
-  binWrap: {position: 'absolute', left: 8, bottom: 8, width: 84, alignItems: 'center'},
-  binPress: {alignItems: 'center'},
+  fill: { flex: 1 },
+  binWrap: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    width: 84,
+    alignItems: 'center',
+  },
+  binPress: { alignItems: 'center' },
   binIcon: {
     width: 56,
     height: 56,
@@ -146,8 +174,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
   },
-  binHot: {backgroundColor: 'rgba(226,87,76,0.55)', borderColor: '#fff', transform: [{scale: 1.12}]},
-  binGlyph: {fontSize: 28},
+  binHot: {
+    backgroundColor: 'rgba(226,87,76,0.55)',
+    borderColor: '#fff',
+    transform: [{ scale: 1.12 }],
+  },
+  binGlyph: { fontSize: 28 },
   binBadge: {
     position: 'absolute',
     top: -4,
@@ -160,13 +192,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
-  binBadgeText: {color: '#fff', fontSize: 11, fontWeight: '700'},
+  binBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   binLabel: {
     color: Theme.text,
     fontSize: 11,
     marginTop: 4,
     textShadowColor: 'rgba(0,0,0,0.75)',
-    textShadowOffset: {width: 0, height: 1},
+    textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
 });

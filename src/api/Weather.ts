@@ -19,30 +19,63 @@ interface Loc {
 }
 
 /** WMO weather code → emoji + short label. */
-export const describeWeather = (code: number): {icon: string; label: string} => {
-  if (code === 0) return {icon: '☀️', label: 'Clear'};
-  if (code <= 2) return {icon: '🌤️', label: 'Partly cloudy'};
-  if (code === 3) return {icon: '☁️', label: 'Overcast'};
-  if (code <= 48) return {icon: '🌫️', label: 'Fog'};
-  if (code <= 57) return {icon: '🌦️', label: 'Drizzle'};
-  if (code <= 67) return {icon: '🌧️', label: 'Rain'};
-  if (code <= 77) return {icon: '🌨️', label: 'Snow'};
-  if (code <= 82) return {icon: '🌧️', label: 'Showers'};
-  if (code <= 86) return {icon: '🌨️', label: 'Snow showers'};
-  if (code <= 99) return {icon: '⛈️', label: 'Thunderstorm'};
-  return {icon: '🌡️', label: 'Weather'};
+export const describeWeather = (
+  code: number,
+): { icon: string; label: string } => {
+  if (code === 0) {
+    return { icon: '☀️', label: 'Clear' };
+  }
+  if (code <= 2) {
+    return { icon: '🌤️', label: 'Partly cloudy' };
+  }
+  if (code === 3) {
+    return { icon: '☁️', label: 'Overcast' };
+  }
+  if (code <= 48) {
+    return { icon: '🌫️', label: 'Fog' };
+  }
+  if (code <= 57) {
+    return { icon: '🌦️', label: 'Drizzle' };
+  }
+  if (code <= 67) {
+    return { icon: '🌧️', label: 'Rain' };
+  }
+  if (code <= 77) {
+    return { icon: '🌨️', label: 'Snow' };
+  }
+  if (code <= 82) {
+    return { icon: '🌧️', label: 'Showers' };
+  }
+  if (code <= 86) {
+    return { icon: '🌨️', label: 'Snow showers' };
+  }
+  if (code <= 99) {
+    return { icon: '⛈️', label: 'Thunderstorm' };
+  }
+  return { icon: '🌡️', label: 'Weather' };
 };
 
 const getLocation = async (): Promise<Loc | null> => {
   try {
     const cached = await AsyncStorage.getItem(LOC_KEY);
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      return JSON.parse(cached);
+    }
   } catch {}
   try {
     // Keyless IP geolocation (no permission needed).
-    const {data} = await axios.get('https://ipapi.co/json/', {timeout: 12000});
-    if (typeof data?.latitude === 'number' && typeof data?.longitude === 'number') {
-      const loc: Loc = {lat: data.latitude, lon: data.longitude, city: data.city ?? ''};
+    const { data } = await axios.get('https://ipapi.co/json/', {
+      timeout: 12000,
+    });
+    if (
+      typeof data?.latitude === 'number' &&
+      typeof data?.longitude === 'number'
+    ) {
+      const loc: Loc = {
+        lat: data.latitude,
+        lon: data.longitude,
+        city: data.city ?? '',
+      };
       await AsyncStorage.setItem(LOC_KEY, JSON.stringify(loc));
       return loc;
     }
@@ -58,15 +91,19 @@ export const getWeather = async (): Promise<Weather | null> => {
     const cachedRaw = await AsyncStorage.getItem(CACHE_KEY);
     if (cachedRaw) {
       const cached: Weather = JSON.parse(cachedRaw);
-      if (Date.now() - cached.updated < FRESH_MS) return cached;
+      if (Date.now() - cached.updated < FRESH_MS) {
+        return cached;
+      }
     }
   } catch {}
 
   const loc = await getLocation();
-  if (!loc) return null;
+  if (!loc) {
+    return null;
+  }
 
   try {
-    const {data} = await axios.get('https://api.open-meteo.com/v1/forecast', {
+    const { data } = await axios.get('https://api.open-meteo.com/v1/forecast', {
       params: {
         latitude: loc.lat,
         longitude: loc.lon,
