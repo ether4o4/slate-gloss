@@ -17,7 +17,7 @@ on:
           - release
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   JAVA_VERSION: '17'
   GRADLE_OPTS: '-Dorg.gradle.configuration-cache=false'
 
@@ -33,7 +33,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -55,7 +54,7 @@ jobs:
           ${{ runner.os }}-gradle-
 
     - name: Install dependencies
-      run: npm ci --legacy-peer-deps
+      run: npm install --legacy-peer-deps
 
     - name: Make gradlew executable
       run: chmod +x android/gradlew

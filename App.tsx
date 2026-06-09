@@ -1,21 +1,32 @@
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useRef, useEffect} from 'react';
 import {
   StatusBar,
   StyleSheet,
   View,
   Text,
   SafeAreaView,
+  ScrollView,
   Dimensions,
   TouchableOpacity,
   Modal,
 } from 'react-native';
+import {
+  GestureHandlerRootView,
+  GestureDetector,
+  Gesture,
+  Directions,
+} from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
+  runOnJS,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
+
+// Context-first registry: open intents are surfaced on the taskbar.
+import {ActionRegistry, Intent} from './src/mve/ActionRegistry';
 
 // Import our glass components
 import {
@@ -32,6 +43,10 @@ import {
   useGlassShimmer,
   useButtonHover,
 } from './src/animations';
+
+// MVE engine pages (chat + Linux sandbox) and settings
+import MveScreen from './src/mve/MveScreen';
+import MveSettingsScreen from './src/mve/MveSettingsScreen';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -63,7 +78,8 @@ const DesktopIcon: React.FC<{
 const StartMenu: React.FC<{
   visible: boolean;
   onClose: () => void;
-}> = ({visible, onClose}) => {
+  onOpenMve: () => void;
+}> = ({visible, onClose, onOpenMve}) => {
   const {animatedStyle} = useStartMenuAnimation(visible);
 
   return (
@@ -78,7 +94,12 @@ const StartMenu: React.FC<{
             <View style={styles.startMenuContent}>
               <Text style={styles.startMenuTitle}>Start</Text>
               <View style={styles.menuDivider} />
-              
+
+              <GlassButton
+                title="MVE"
+                onPress={onOpenMve}
+                width={240}
+              />
               <GlassButton
                 title="All Programs"
                 onPress={() => {}}
@@ -120,6 +141,8 @@ const StartMenu: React.FC<{
 const App: React.FC = () => {
   const [startMenuOpen, setStartMenuOpen] = useState(false);
   const [openWindows, setOpenWindows] = useState<string[]>([]);
+  const [mveSettingsOpen, setMveSettingsOpen] = useState(false);
+  const pagerRef = useRef<ScrollView>(null);
 
   const toggleStartMenu = useCallback(() => {
     setStartMenuOpen(prev => !prev);
@@ -133,7 +156,27 @@ const App: React.FC = () => {
     setOpenWindows(prev => prev.filter(w => w !== title));
   }, []);
 
+  // Summon MVE: snap the pager to the MVE page (left of home).
+  const summonMve = useCallback(() => {
+    pagerRef.current?.scrollTo({x: 0, animated: true});
+  }, []);
+
+  // Open intents drive the taskbar MVE pill (context-first surfacing).
+  const [openIntents, setOpenIntents] = useState<Intent[]>([]);
+  useEffect(
+    () => ActionRegistry.subscribe(() => setOpenIntents(ActionRegistry.open())),
+    [],
+  );
+
+  // System gesture: a right-fling from the left edge calls MVE up from anywhere.
+  const summonGesture = Gesture.Fling()
+    .direction(Directions.RIGHT)
+    .onEnd(() => {
+      runOnJS(summonMve)();
+    });
+
   return (
+    <GestureHandlerRootView style={styles.root}>
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a3a5c" />
       
@@ -145,10 +188,28 @@ const App: React.FC = () => {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Desktop Area */}
-      <View style={styles.desktop}>
-        {/* Desktop Icons */}
-        <View style={styles.iconGrid}>
+      {/* Horizontal pager: MVE page sits to the LEFT of the home desktop.
+          Starts on the home page; swipe left to reach the MVE engine. */}
+      <ScrollView
+        ref={pagerRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        style={styles.pager}
+        contentOffset={{x: SCREEN_WIDTH, y: 0}}
+        onLayout={() =>
+          pagerRef.current?.scrollTo({x: SCREEN_WIDTH, animated: false})
+        }>
+        {/* MVE page — chat + Linux sandbox */}
+        <View style={styles.page}>
+          <MveScreen />
+        </View>
+
+        {/* Home desktop */}
+        <View style={styles.page}>
+          <View style={styles.desktop}>
+            {/* Desktop Icons */}
+            <View style={styles.iconGrid}>
           <DesktopIcon
             label="Computer"
             icon="💻"
@@ -196,13 +257,35 @@ const App: React.FC = () => {
             </View>
           </WindowFrame>
         ))}
-      </View>
+          </View>
+        </View>
+      </ScrollView>
 
       {/* Start Menu */}
       <StartMenu
         visible={startMenuOpen}
         onClose={() => setStartMenuOpen(false)}
+        onOpenMve={() => {
+          setStartMenuOpen(false);
+          setMveSettingsOpen(true);
+        }}
       />
+
+      {/* MVE Settings (opened from the start menu) */}
+      <Modal
+        visible={mveSettingsOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMveSettingsOpen(false)}>
+        <View style={styles.mveModalOverlay}>
+          <MveSettingsScreen onClose={() => setMveSettingsOpen(false)} />
+        </View>
+      </Modal>
+
+      {/* Left-edge summon strip: right-fling here calls MVE up. */}
+      <GestureDetector gesture={summonGesture}>
+        <View style={styles.summonEdge} pointerEvents="box-only" />
+      </GestureDetector>
 
       {/* Taskbar */}
       <Taskbar
@@ -218,13 +301,63 @@ const App: React.FC = () => {
         openApps={openWindows}
         onAppClick={(app) => console.log('Clicked:', app)}
       />
+
+      {/* MVE intent pill: open-task count, tap to summon MVE. */}
+      <TouchableOpacity
+        style={styles.mvePill}
+        onPress={summonMve}
+        activeOpacity={0.8}>
+        <Text style={styles.mvePillText}>
+          ◎ MVE{openIntents.length ? ` · ${openIntents.length}` : ''}
+        </Text>
+      </TouchableOpacity>
     </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   container: {
     flex: 1,
+  },
+  pager: {
+    flex: 1,
+  },
+  summonEdge: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 48,
+    width: 16,
+  },
+  mvePill: {
+    position: 'absolute',
+    right: 12,
+    bottom: 56,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: 'rgba(120,170,235,0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  mvePillText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  page: {
+    width: SCREEN_WIDTH,
+  },
+  mveModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 16,
   },
   desktop: {
     flex: 1,
