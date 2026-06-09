@@ -2,28 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { sendMessageToDeepSeek } from '../api/DeepSeekService';
 import { initDB, saveMessage, getMessages } from '../db/ChatPersistence';
+import { ThemeStore } from '../theme/themes';
+import { handleAssistantCommand } from '../desktop/assistantCommands';
 
 const SwarmChatWindow = ({ onClose }: { onClose: () => void }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [assistantName, setAssistantName] = useState(
+    () => ThemeStore.get().assistantName,
+  );
 
   useEffect(() => {
     initDB();
     getMessages(setMessages);
   }, []);
 
+  useEffect(
+    () => ThemeStore.subscribe(() => setAssistantName(ThemeStore.get().assistantName)),
+    [],
+  );
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { role: 'user', content: input };
+    const text = input.trim();
+    const userMessage = { role: 'user', content: text };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
-    saveMessage('user', input);
+    saveMessage('user', text);
     setInput('');
     setLoading(true);
 
     try {
+      // Local assistant commands (themes, shell, rename) run before DeepSeek.
+      const local = await handleAssistantCommand(text);
+      if (local != null) {
+        setMessages([...newMessages, { role: 'assistant', content: local }]);
+        saveMessage('assistant', local);
+        return;
+      }
       const aiResponse = await sendMessageToDeepSeek(newMessages);
       setMessages([...newMessages, aiResponse]);
       saveMessage('assistant', aiResponse.content);
@@ -40,7 +58,7 @@ const SwarmChatWindow = ({ onClose }: { onClose: () => void }) => {
       style={styles.container}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Swarm Chat</Text>
+        <Text style={styles.headerTitle}>{assistantName}</Text>
         <TouchableOpacity onPress={onClose}>
           <Text style={styles.closeButton}>✕</Text>
         </TouchableOpacity>
