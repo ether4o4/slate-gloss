@@ -21,6 +21,7 @@ import {StartMenu} from './src/components/ui/StartMenu';
 import {SystemFlyout} from './src/components/ui/SystemFlyout';
 import {RecycleBin} from './src/components/ui/RecycleBin';
 import {Personalize} from './src/components/ui/Personalize';
+import {ContextMenu, type MenuItem} from './src/components/ui/ContextMenu';
 import SwarmChatWindow from './src/components/SwarmChatWindow';
 import {
   getApps,
@@ -87,6 +88,7 @@ const App: React.FC = () => {
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [recycleOpen, setRecycleOpen] = useState(false);
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
+  const [menu, setMenu] = useState<{title?: string; items: MenuItem[]} | null>(null);
 
   const grid = useMemo(() => {
     const win = Dimensions.get('window');
@@ -165,33 +167,66 @@ const App: React.FC = () => {
   const desktopIconMenu = useCallback(
     (pkg: string) => {
       const label = appsByPkg[pkg]?.label ?? pkg;
-      Alert.alert(label, undefined, [
-        {text: 'Open', onPress: () => launch(pkg)},
-        {text: 'Remove from desktop', onPress: () => update(s => recycleDesktopIcon(s, pkg))},
-        {text: 'App info', onPress: () => openAppInfo(pkg)},
-        {text: 'Uninstall', style: 'destructive', onPress: () => uninstallApp(pkg)},
-        {text: 'Cancel', style: 'cancel'},
-      ]);
+      const isPinned = state?.pinned.includes(pkg);
+      setMenu({
+        title: label,
+        items: [
+          {label: 'Open', icon: '▶', onPress: () => launch(pkg)},
+          {label: isPinned ? 'Unpin from taskbar' : 'Pin to taskbar', icon: '📌', onPress: () => update(s => togglePin(s, pkg))},
+          {label: 'App info', icon: 'ⓘ', onPress: () => openAppInfo(pkg)},
+          {label: 'Remove from desktop', icon: '🗑️', onPress: () => update(s => recycleDesktopIcon(s, pkg))},
+          {label: 'Uninstall', icon: '⛔', danger: true, onPress: () => uninstallApp(pkg)},
+        ],
+      });
     },
-    [appsByPkg, launch, update],
+    [appsByPkg, state, launch, update],
   );
 
   const startItemMenu = useCallback(
     (pkg: string) => {
       const label = appsByPkg[pkg]?.label ?? pkg;
       const isPinned = state?.pinned.includes(pkg);
-      Alert.alert(label, undefined, [
-        {text: isPinned ? 'Unpin' : 'Pin to Start', onPress: () => update(s => togglePin(s, pkg))},
-        {
-          text: 'Add to desktop',
-          onPress: () => update(s => addToDesktop(s, pkg, grid.cols, grid.rows)),
-        },
-        {text: 'App info', onPress: () => openAppInfo(pkg)},
-        {text: 'Uninstall', style: 'destructive', onPress: () => uninstallApp(pkg)},
-        {text: 'Cancel', style: 'cancel'},
-      ]);
+      setMenu({
+        title: label,
+        items: [
+          {label: 'Open', icon: '▶', onPress: () => launch(pkg)},
+          {label: isPinned ? 'Unpin' : 'Pin to taskbar', icon: '📌', onPress: () => update(s => togglePin(s, pkg))},
+          {label: 'Add to desktop', icon: '➕', onPress: () => update(s => addToDesktop(s, pkg, grid.cols, grid.rows))},
+          {label: 'App info', icon: 'ⓘ', onPress: () => openAppInfo(pkg)},
+          {label: 'Uninstall', icon: '⛔', danger: true, onPress: () => uninstallApp(pkg)},
+        ],
+      });
     },
-    [appsByPkg, state, update, grid],
+    [appsByPkg, state, update, grid, launch],
+  );
+
+  const emptyDesktopMenu = useCallback(() => {
+    setMenu({
+      title: 'Desktop',
+      items: [
+        {label: 'Open Start (apps)', icon: '⊞', onPress: () => setStartOpen(true)},
+        {label: 'Add a widget', icon: '🧩', onPress: () => addWidget()},
+        {label: 'Change wallpaper', icon: '🖼️', onPress: () => changeWallpaper()},
+        {label: 'Personalize', icon: '🎨', onPress: () => setPersonalizeOpen(true)},
+      ],
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const taskbarPinMenu = useCallback(
+    (pkg: string) => {
+      const label = appsByPkg[pkg]?.label ?? pkg;
+      setMenu({
+        title: label,
+        items: [
+          {label: 'Open', icon: '▶', onPress: () => launch(pkg)},
+          {label: 'Unpin', icon: '📌', onPress: () => update(s => togglePin(s, pkg))},
+          {label: 'App info', icon: 'ⓘ', onPress: () => openAppInfo(pkg)},
+          {label: 'Uninstall', icon: '⛔', danger: true, onPress: () => uninstallApp(pkg)},
+        ],
+      });
+    },
+    [appsByPkg, launch, update],
   );
 
   const changeWallpaper = useCallback(async () => {
@@ -365,6 +400,7 @@ const App: React.FC = () => {
           onOpenRecycle={() => setRecycleOpen(true)}
           onMoveWidget={moveWidget}
           onRemoveWidget={removeWidget}
+          onEmptyMenu={emptyDesktopMenu}
         />
       </View>
 
@@ -382,6 +418,7 @@ const App: React.FC = () => {
             setFlyoutOpen(true);
           }}
           onLaunch={launch}
+          onPinMenu={taskbarPinMenu}
         />
       </View>
 
@@ -466,6 +503,13 @@ const App: React.FC = () => {
         onRequestClose={() => setSwarmOpen(false)}>
         <SwarmChatWindow onClose={() => setSwarmOpen(false)} executeTool={executeTool} />
       </Modal>
+
+      <ContextMenu
+        visible={menu != null}
+        title={menu?.title}
+        items={menu?.items ?? []}
+        onClose={() => setMenu(null)}
+      />
     </View>
   );
 };

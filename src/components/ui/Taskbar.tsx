@@ -15,6 +15,7 @@ interface Props {
   onSwarmPress: () => void;
   onClockPress: () => void;
   onLaunch: (pkg: string) => void;
+  onPinMenu: (pkg: string) => void;
 }
 
 export const Taskbar: React.FC<Props> = ({
@@ -26,6 +27,7 @@ export const Taskbar: React.FC<Props> = ({
   onSwarmPress,
   onClockPress,
   onLaunch,
+  onPinMenu,
 }) => {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -59,6 +61,8 @@ export const Taskbar: React.FC<Props> = ({
           <Pressable
             key={app.packageName}
             onPress={() => onLaunch(app.packageName)}
+            onLongPress={() => onPinMenu(app.packageName)}
+            delayLongPress={350}
             style={({pressed}) => [styles.pinBtn, pressed && styles.pinPressed]}>
             <AppIconImage app={app} size={34} radius={8} />
           </Pressable>

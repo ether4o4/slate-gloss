@@ -29,6 +29,7 @@ interface Props {
   onOpenRecycle: () => void;
   onMoveWidget: (id: number, x: number, y: number) => void;
   onRemoveWidget: (id: number) => void;
+  onEmptyMenu: () => void;
 }
 
 export const Desktop: React.FC<Props> = ({
@@ -47,6 +48,7 @@ export const Desktop: React.FC<Props> = ({
   onOpenRecycle,
   onMoveWidget,
   onRemoveWidget,
+  onEmptyMenu,
 }) => {
   const gridOrigin = useRef<Rect>({x: 0, y: 0, w: 0, h: 0});
   const binRect = useRef<Rect>({x: 0, y: 0, w: 0, h: 0});
@@ -85,6 +87,9 @@ export const Desktop: React.FC<Props> = ({
 
   return (
     <View style={styles.fill} ref={gridRef} onLayout={measure}>
+      {/* Long-press empty desktop space for the context menu. */}
+      <Pressable style={StyleSheet.absoluteFill} onLongPress={onEmptyMenu} delayLongPress={400} />
+
       {widgets.map(w => (
         <HostedWidget key={w.widgetId} widget={w} onMove={onMoveWidget} onRemove={onRemoveWidget} />
       ))}
