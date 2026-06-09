@@ -1,10 +1,11 @@
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useRef} from 'react';
 import {
   StatusBar,
   StyleSheet,
   View,
   Text,
   SafeAreaView,
+  ScrollView,
   Dimensions,
   TouchableOpacity,
   Modal,
@@ -32,6 +33,10 @@ import {
   useGlassShimmer,
   useButtonHover,
 } from './src/animations';
+
+// MVE engine pages (chat + Linux sandbox) and settings
+import MveScreen from './src/mve/MveScreen';
+import MveSettingsScreen from './src/mve/MveSettingsScreen';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -63,7 +68,8 @@ const DesktopIcon: React.FC<{
 const StartMenu: React.FC<{
   visible: boolean;
   onClose: () => void;
-}> = ({visible, onClose}) => {
+  onOpenMve: () => void;
+}> = ({visible, onClose, onOpenMve}) => {
   const {animatedStyle} = useStartMenuAnimation(visible);
 
   return (
@@ -78,7 +84,12 @@ const StartMenu: React.FC<{
             <View style={styles.startMenuContent}>
               <Text style={styles.startMenuTitle}>Start</Text>
               <View style={styles.menuDivider} />
-              
+
+              <GlassButton
+                title="MVE"
+                onPress={onOpenMve}
+                width={240}
+              />
               <GlassButton
                 title="All Programs"
                 onPress={() => {}}
@@ -120,6 +131,8 @@ const StartMenu: React.FC<{
 const App: React.FC = () => {
   const [startMenuOpen, setStartMenuOpen] = useState(false);
   const [openWindows, setOpenWindows] = useState<string[]>([]);
+  const [mveSettingsOpen, setMveSettingsOpen] = useState(false);
+  const pagerRef = useRef<ScrollView>(null);
 
   const toggleStartMenu = useCallback(() => {
     setStartMenuOpen(prev => !prev);
@@ -145,10 +158,28 @@ const App: React.FC = () => {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Desktop Area */}
-      <View style={styles.desktop}>
-        {/* Desktop Icons */}
-        <View style={styles.iconGrid}>
+      {/* Horizontal pager: MVE page sits to the LEFT of the home desktop.
+          Starts on the home page; swipe left to reach the MVE engine. */}
+      <ScrollView
+        ref={pagerRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        style={styles.pager}
+        contentOffset={{x: SCREEN_WIDTH, y: 0}}
+        onLayout={() =>
+          pagerRef.current?.scrollTo({x: SCREEN_WIDTH, animated: false})
+        }>
+        {/* MVE page — chat + Linux sandbox */}
+        <View style={styles.page}>
+          <MveScreen />
+        </View>
+
+        {/* Home desktop */}
+        <View style={styles.page}>
+          <View style={styles.desktop}>
+            {/* Desktop Icons */}
+            <View style={styles.iconGrid}>
           <DesktopIcon
             label="Computer"
             icon="💻"
@@ -196,13 +227,30 @@ const App: React.FC = () => {
             </View>
           </WindowFrame>
         ))}
-      </View>
+          </View>
+        </View>
+      </ScrollView>
 
       {/* Start Menu */}
       <StartMenu
         visible={startMenuOpen}
         onClose={() => setStartMenuOpen(false)}
+        onOpenMve={() => {
+          setStartMenuOpen(false);
+          setMveSettingsOpen(true);
+        }}
       />
+
+      {/* MVE Settings (opened from the start menu) */}
+      <Modal
+        visible={mveSettingsOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMveSettingsOpen(false)}>
+        <View style={styles.mveModalOverlay}>
+          <MveSettingsScreen onClose={() => setMveSettingsOpen(false)} />
+        </View>
+      </Modal>
 
       {/* Taskbar */}
       <Taskbar
@@ -225,6 +273,19 @@ const App: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  pager: {
+    flex: 1,
+  },
+  page: {
+    width: SCREEN_WIDTH,
+  },
+  mveModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 16,
   },
   desktop: {
     flex: 1,
