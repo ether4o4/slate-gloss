@@ -14,6 +14,7 @@ interface Props {
   onResetStartIcon: () => void;
   onChangeWallpaper: () => void;
   onAddWidget: () => void;
+  onRunSetup: () => void;
 }
 
 const sameColors = (a: string[], b: string[]) =>
@@ -29,6 +30,7 @@ export const Personalize: React.FC<Props> = ({
   onResetStartIcon,
   onChangeWallpaper,
   onAddWidget,
+  onRunSetup,
 }) => {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -84,6 +86,11 @@ export const Personalize: React.FC<Props> = ({
               <Text style={styles.section}>Widgets</Text>
               <Pressable style={styles.btn} onPress={onAddWidget}>
                 <Text style={styles.btnText}>Add a home-screen widget…</Text>
+              </Pressable>
+
+              <Text style={styles.section}>Setup</Text>
+              <Pressable style={styles.btn} onPress={onRunSetup}>
+                <Text style={styles.btnText}>Run setup &amp; permissions…</Text>
               </Pressable>
             </ScrollView>
           </GlassSurface>

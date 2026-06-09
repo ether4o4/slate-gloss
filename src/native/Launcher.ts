@@ -42,6 +42,7 @@ interface LauncherNativeModule {
   getSystemInfo(): Promise<SystemInfo>;
   isNotificationAccessEnabled(): Promise<boolean>;
   openNotificationAccessSettings(): void;
+  openBatteryOptimization(): void;
   getNotifications(): Promise<NotificationInfo[]>;
   dismissNotification(key: string): void;
   pickStartIcon(): Promise<string>;
@@ -133,6 +134,8 @@ export const isNotificationAccessEnabled = async (): Promise<boolean> => {
 
 export const openNotificationAccessSettings = (): void =>
   native?.openNotificationAccessSettings();
+
+export const openBatteryOptimization = (): void => native?.openBatteryOptimization();
 
 export const getNotifications = async (): Promise<NotificationInfo[]> => {
   if (!native) return [];

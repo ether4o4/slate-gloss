@@ -440,6 +440,20 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
     }
   }
 
+  /** Opens the battery-optimization list so the user can mark us "Unrestricted". */
+  @ReactMethod
+  fun openBatteryOptimization() {
+    val list = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val fallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${reactContext.packageName}"))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+      reactContext.startActivity(list)
+    } catch (e: Exception) {
+      try { reactContext.startActivity(fallback) } catch (_: Exception) {}
+    }
+  }
+
   // RN event-emitter bookkeeping (required when using NativeEventEmitter).
   @ReactMethod fun addListener(eventName: String) {}
   @ReactMethod fun removeListeners(count: Int) {}

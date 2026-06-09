@@ -22,6 +22,11 @@ import {SystemFlyout} from './src/components/ui/SystemFlyout';
 import {RecycleBin} from './src/components/ui/RecycleBin';
 import {Personalize} from './src/components/ui/Personalize';
 import {ContextMenu, type MenuItem} from './src/components/ui/ContextMenu';
+import {Tour} from './src/components/ui/Tour';
+import {hasApiKey} from './src/db/Settings';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const TOUR_KEY = '@nsos_tour_done';
 import SwarmChatWindow from './src/components/SwarmChatWindow';
 import {
   getApps,
@@ -37,6 +42,7 @@ import {
   getNotifications,
   isNotificationAccessEnabled,
   openNotificationAccessSettings,
+  openBatteryOptimization,
   dismissNotification,
   onNotificationsChanged,
   type AppInfo,
@@ -89,6 +95,8 @@ const App: React.FC = () => {
   const [recycleOpen, setRecycleOpen] = useState(false);
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
   const [menu, setMenu] = useState<{title?: string; items: MenuItem[]} | null>(null);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [hasKey, setHasKey] = useState(false);
 
   const grid = useMemo(() => {
     const win = Dimensions.get('window');
@@ -129,11 +137,17 @@ const App: React.FC = () => {
     loadApps();
     loadState().then(setState);
     isDefaultLauncher().then(setIsDefault);
+    hasApiKey().then(setHasKey);
     refreshNotifications();
+    // First launch → show the setup tour once.
+    AsyncStorage.getItem(TOUR_KEY).then(done => {
+      if (done !== '1') setTourOpen(true);
+    });
     const unsub = onNotificationsChanged(refreshNotifications);
     const appSub = AppState.addEventListener('change', s => {
       if (s === 'active') {
         isDefaultLauncher().then(setIsDefault);
+        hasApiKey().then(setHasKey);
         refreshNotifications();
       }
     });
@@ -142,6 +156,11 @@ const App: React.FC = () => {
       appSub.remove();
     };
   }, [loadApps, refreshNotifications]);
+
+  const finishTour = useCallback(() => {
+    AsyncStorage.setItem(TOUR_KEY, '1');
+    setTourOpen(false);
+  }, []);
 
   // ---- state mutation helper -------------------------------------------
 
@@ -495,6 +514,10 @@ const App: React.FC = () => {
           setPersonalizeOpen(false);
           addWidget();
         }}
+        onRunSetup={() => {
+          setPersonalizeOpen(false);
+          setTourOpen(true);
+        }}
       />
 
       <Modal
@@ -509,6 +532,21 @@ const App: React.FC = () => {
         title={menu?.title}
         items={menu?.items ?? []}
         onClose={() => setMenu(null)}
+      />
+
+      <Tour
+        visible={tourOpen}
+        isDefault={isDefault}
+        notifAccess={notifAccess}
+        hasKey={hasKey}
+        onClose={finishTour}
+        onSetDefault={requestDefaultLauncher}
+        onBattery={openBatteryOptimization}
+        onNotifAccess={openNotificationAccessSettings}
+        onAddKey={() => {
+          finishTour();
+          setSwarmOpen(true);
+        }}
       />
     </View>
   );
