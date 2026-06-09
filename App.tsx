@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useRef} from 'react';
+import React, {useState, useCallback, useRef, useEffect} from 'react';
 import {
   StatusBar,
   StyleSheet,
@@ -10,13 +10,23 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
+import {
+  GestureHandlerRootView,
+  GestureDetector,
+  Gesture,
+  Directions,
+} from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
+  runOnJS,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
+
+// Context-first registry: open intents are surfaced on the taskbar.
+import {ActionRegistry, Intent} from './src/mve/ActionRegistry';
 
 // Import our glass components
 import {
@@ -146,7 +156,27 @@ const App: React.FC = () => {
     setOpenWindows(prev => prev.filter(w => w !== title));
   }, []);
 
+  // Summon MVE: snap the pager to the MVE page (left of home).
+  const summonMve = useCallback(() => {
+    pagerRef.current?.scrollTo({x: 0, animated: true});
+  }, []);
+
+  // Open intents drive the taskbar MVE pill (context-first surfacing).
+  const [openIntents, setOpenIntents] = useState<Intent[]>([]);
+  useEffect(
+    () => ActionRegistry.subscribe(() => setOpenIntents(ActionRegistry.open())),
+    [],
+  );
+
+  // System gesture: a right-fling from the left edge calls MVE up from anywhere.
+  const summonGesture = Gesture.Fling()
+    .direction(Directions.RIGHT)
+    .onEnd(() => {
+      runOnJS(summonMve)();
+    });
+
   return (
+    <GestureHandlerRootView style={styles.root}>
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a3a5c" />
       
@@ -252,6 +282,11 @@ const App: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Left-edge summon strip: right-fling here calls MVE up. */}
+      <GestureDetector gesture={summonGesture}>
+        <View style={styles.summonEdge} pointerEvents="box-only" />
+      </GestureDetector>
+
       {/* Taskbar */}
       <Taskbar
         height={48}
@@ -266,16 +301,53 @@ const App: React.FC = () => {
         openApps={openWindows}
         onAppClick={(app) => console.log('Clicked:', app)}
       />
+
+      {/* MVE intent pill: open-task count, tap to summon MVE. */}
+      <TouchableOpacity
+        style={styles.mvePill}
+        onPress={summonMve}
+        activeOpacity={0.8}>
+        <Text style={styles.mvePillText}>
+          ◎ MVE{openIntents.length ? ` · ${openIntents.length}` : ''}
+        </Text>
+      </TouchableOpacity>
     </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
   pager: {
     flex: 1,
+  },
+  summonEdge: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 48,
+    width: 16,
+  },
+  mvePill: {
+    position: 'absolute',
+    right: 12,
+    bottom: 56,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    backgroundColor: 'rgba(120,170,235,0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  mvePillText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
   page: {
     width: SCREEN_WIDTH,

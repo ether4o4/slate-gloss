@@ -18,26 +18,33 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { MveBridge, ServiceInstance, isNative } from './MveBridge';
+import { MveBridge, SandboxStatus, ServiceInstance, isNative } from './MveBridge';
 
 const MveSettingsScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [services, setServices] = useState<ServiceInstance[]>([]);
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [sandbox, setSandbox] = useState(false);
   const [daemon, setDaemon] = useState(false);
+  const [sbStatus, setSbStatus] = useState<SandboxStatus | null>(null);
+
+  const refreshSandbox = async () => {
+    setSbStatus(await MveBridge.sandboxStatus());
+  };
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [svc, sb, dm] = await Promise.all([
+      const [svc, sb, dm, st] = await Promise.all([
         MveBridge.services(),
         MveBridge.isSandboxEnabled(),
         MveBridge.isDaemonEnabled(),
+        MveBridge.sandboxStatus(),
       ]);
       if (cancelled) return;
       setServices(svc);
       setSandbox(sb);
       setDaemon(dm);
+      setSbStatus(st);
       const loaded: Record<string, string> = {};
       await Promise.all(
         svc.map(async s => {
@@ -111,8 +118,29 @@ const MveSettingsScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           onChange={async v => {
             setSandbox(v);
             await MveBridge.setSandboxEnabled(v);
+            await refreshSandbox();
           }}
         />
+        {sbStatus && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.flex}>
+                <Text style={styles.cardTitle}>Sandbox status</Text>
+                <Text style={styles.hint}>{sbStatus.statusText}</Text>
+              </View>
+              {!sbStatus.installed && (
+                <TouchableOpacity
+                  style={styles.setupBtn}
+                  onPress={async () => {
+                    await MveBridge.setupSandbox();
+                    await refreshSandbox();
+                  }}>
+                  <Text style={styles.setupBtnText}>Setup</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
         <ToggleRow
           label="Daemon (24/7 background)"
           hint="Keep the engine running for scheduled tasks and heartbeat"
@@ -205,6 +233,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   empty: { color: '#9db8d6', fontSize: 13, fontStyle: 'italic' },
+  setupBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(120,170,235,0.6)',
+  },
+  setupBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 13 },
 });
 
 export default MveSettingsScreen;
