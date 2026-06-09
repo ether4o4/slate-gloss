@@ -57,9 +57,13 @@ export const HostedWidget: React.FC<Props> = ({ widget, onMove, onRemove }) => {
       ]}
     >
       <View style={styles.handle} {...responder.panHandlers}>
-        <Text style={styles.grip}>⋮⋮</Text>
+        <Text style={styles.grip}>⠿⠿ drag</Text>
         <View style={{ flex: 1 }} />
-        <Pressable onPress={() => onRemove(widget.widgetId)} hitSlop={10}>
+        <Pressable
+          onPress={() => onRemove(widget.widgetId)}
+          hitSlop={14}
+          style={styles.removeBtn}
+        >
           <Text style={styles.remove}>✕</Text>
         </Pressable>
       </View>
@@ -88,11 +92,21 @@ const styles = StyleSheet.create({
   handle: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 22,
-    paddingHorizontal: 8,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    height: 30,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(10,20,35,0.85)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.18)',
   },
-  grip: { color: Theme.textDim, fontSize: 12, letterSpacing: -2 },
+  grip: { color: '#cdd9e6', fontSize: 12, fontWeight: '700', letterSpacing: 1 },
+  removeBtn: {
+    width: 26,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
   remove: { color: '#fff', fontSize: 13, fontWeight: '700' },
   body: { flex: 1 },
   host: { flex: 1 },

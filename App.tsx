@@ -325,6 +325,15 @@ const App: React.FC = () => {
 
   // ---- Real widget hosting ---------------------------------------------
 
+  // Snap a free pixel position to the icon grid (the "magnet").
+  const snapToGrid = useCallback(
+    (x: number, y: number) => ({
+      x: Math.max(0, Math.round(x / CELL_W) * CELL_W),
+      y: Math.max(0, Math.round(y / CELL_H) * CELL_H),
+    }),
+    [],
+  );
+
   const addWidget = useCallback(async () => {
     const meta = await pickWidget();
     if (!meta) {
@@ -333,16 +342,21 @@ const App: React.FC = () => {
     const screenW = Dimensions.get('window').width;
     const w = Math.max(120, Math.min(meta.minWidth || 160, screenW - 24));
     const h = Math.max(80, Math.min(meta.minHeight || 120, 420));
-    update(s =>
-      addDesktopWidget(s, {
+    update(s => {
+      // Spawn in open space below the top icon rows (snapped + staggered),
+      // never on top of the icons at the top of the screen.
+      const n = s.desktopWidgets.length;
+      const baseRow = Math.max(2, Math.floor(grid.rows * 0.4));
+      const pos = snapToGrid((n % 2) * CELL_W, (baseRow + n) * CELL_H);
+      return addDesktopWidget(s, {
         widgetId: meta.widgetId,
-        x: 12,
-        y: 12 + s.desktopWidgets.length * 16,
+        x: pos.x,
+        y: pos.y,
         w,
         h,
-      }),
-    );
-  }, [update]);
+      });
+    });
+  }, [update, grid, snapToGrid]);
 
   const removeWidget = useCallback(
     (id: number) => {
@@ -353,9 +367,11 @@ const App: React.FC = () => {
   );
 
   const moveWidget = useCallback(
-    (id: number, x: number, y: number) =>
-      update(s => moveDesktopWidget(s, id, x, y)),
-    [update],
+    (id: number, x: number, y: number) => {
+      const p = snapToGrid(x, y); // magnet to nearest grid slot on release
+      update(s => moveDesktopWidget(s, id, p.x, p.y));
+    },
+    [update, snapToGrid],
   );
 
   // ---- Swarm command sandbox (tool calls) ------------------------------

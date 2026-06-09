@@ -107,15 +107,6 @@ export const Desktop: React.FC<Props> = ({
         delayLongPress={400}
       />
 
-      {widgets.map(w => (
-        <HostedWidget
-          key={w.widgetId}
-          widget={w}
-          onMove={onMoveWidget}
-          onRemove={onRemoveWidget}
-        />
-      ))}
-
       {icons.map(icon => {
         const app = apps[icon.packageName];
         return (
@@ -135,6 +126,16 @@ export const Desktop: React.FC<Props> = ({
           />
         );
       })}
+
+      {/* Widgets render above icons so their drag handle is always grabbable. */}
+      {widgets.map(w => (
+        <HostedWidget
+          key={w.widgetId}
+          widget={w}
+          onMove={onMoveWidget}
+          onRemove={onRemoveWidget}
+        />
+      ))}
 
       {/* Recycle Bin (drop target + opens the bin) */}
       <View ref={binRef} onLayout={measure} style={styles.binWrap}>
