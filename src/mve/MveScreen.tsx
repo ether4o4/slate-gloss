@@ -9,7 +9,7 @@
  * intelligence of its own. When the native engine isn't linked, the bridge's
  * mock keeps everything interactive and a banner says so.
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -21,7 +21,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ChatMessage, MveBridge, isNative } from './MveBridge';
+import { MveBridge, isNative } from './MveBridge';
+import MveChat from './MveChat';
 
 type Tab = 'chat' | 'terminal';
 
@@ -50,7 +51,7 @@ const MveScreen: React.FC = () => {
         </Text>
       )}
 
-      {tab === 'chat' ? <ChatView /> : <TerminalView />}
+      {tab === 'chat' ? <MveChat /> : <TerminalView />}
     </KeyboardAvoidingView>
   );
 };
@@ -67,79 +68,6 @@ const TabChip: React.FC<{ label: string; active: boolean; onPress: () => void }>
     <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
   </TouchableOpacity>
 );
-
-const ChatView: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    MveBridge.getHistory().then(setMessages).catch(() => {});
-  }, []);
-
-  const send = useCallback(async () => {
-    const text = input.trim();
-    if (!text || loading) return;
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: text }]);
-    setLoading(true);
-    try {
-      const reply = await MveBridge.sendMessage(text);
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch (e) {
-      setMessages(prev => [
-        ...prev,
-        { role: 'assistant', content: `Error: ${String(e)}` },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }, [input, loading]);
-
-  const newChat = useCallback(async () => {
-    await MveBridge.startNewChat();
-    setMessages([]);
-  }, []);
-
-  return (
-    <View style={styles.body}>
-      <FlatList
-        data={messages}
-        keyExtractor={(_, i) => String(i)}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.bubble,
-              item.role === 'user' ? styles.userBubble : styles.aiBubble,
-            ]}>
-            <Text style={styles.bubbleText}>{item.content}</Text>
-          </View>
-        )}
-        ListEmptyComponent={
-          <Text style={styles.empty}>Start a conversation with the MVE engine.</Text>
-        }
-      />
-      {loading && <ActivityIndicator color="#cfe3ff" style={styles.spinner} />}
-      <View style={styles.inputRow}>
-        <TouchableOpacity style={styles.iconBtn} onPress={newChat}>
-          <Text style={styles.iconBtnText}>＋</Text>
-        </TouchableOpacity>
-        <TextInput
-          style={styles.input}
-          value={input}
-          onChangeText={setInput}
-          placeholder="Message MVE…"
-          placeholderTextColor="#8aa6c8"
-          onSubmitEditing={send}
-        />
-        <TouchableOpacity style={styles.sendBtn} onPress={send} disabled={loading}>
-          <Text style={styles.sendBtnText}>Send</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
 
 const TerminalView: React.FC = () => {
   const [lines, setLines] = useState<string[]>([
