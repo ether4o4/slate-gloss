@@ -69,6 +69,7 @@ export interface MveBridgeApi {
   // Sandbox: terminal + files
   sandboxStatus(): Promise<SandboxStatus>;
   setupSandbox(): Promise<void>;
+  installSandboxPackages(): Promise<void>;
   run(command: string): Promise<string>;
   listDir(path: string): Promise<SandboxFileEntry[]>;
   readFile(path: string): Promise<string | null>;
@@ -154,6 +155,7 @@ function createMockBridge(): MveBridgeApi {
         statusText: 'Mock sandbox — engine not linked',
       }),
     setupSandbox: async () => {},
+    installSandboxPackages: async () => {},
     run: command => delay(`[mock] $ ${command}\n(engine not linked)`),
     listDir: path =>
       delay(

@@ -6,6 +6,9 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.neversoftos.mve.sandbox.SandboxManager
+import com.neversoftos.mve.sandbox.SandboxState
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -21,8 +24,10 @@ import java.util.concurrent.Executors
  * shell stops running on the JS mock once the app is built. Everything that can
  * be done on-device today is done for real here:
  *
- *   • Sandbox terminal  — commands run through `/system/bin/sh` rooted in the
- *     app's private sandbox dir; file list/read/write/search hit that tree.
+ *   • Sandbox terminal  — a bundled proot + Alpine Linux userland (the same
+ *     sandbox the MorsVitaEst engine ships): real package manager (`apk`),
+ *     bash, and a persistent shell session. File list/read/write/search hit
+ *     the sandbox home (bind-mounted at /root).
  *   • Providers / keys   — persisted in SharedPreferences (user-supplied keys,
  *     privacy-first: nothing leaves the device except the chat call itself).
  *   • Chat               — a real OpenAI-compatible `/chat/completions` call to
@@ -198,58 +203,131 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
   }
 
   // ---- Sandbox: terminal + files ------------------------------------------
+  //
+  // Backed by the bundled proot + Alpine sandbox (SandboxManager). The shell is
+  // a persistent session: cwd, exports and in-shell state survive across calls.
+
+  private val sandbox by lazy { SandboxManager(reactContext) }
 
   private fun sandboxRoot(): File =
-      File(reactContext.filesDir, "mve-sandbox").apply { if (!exists()) mkdirs() }
+      File(sandbox.homePath).apply { if (!exists()) mkdirs() }
 
   private fun resolvePath(path: String): File = File(sandboxRoot(), path.trimStart('/'))
 
   private fun relPath(f: File): String = "/" + f.relativeTo(sandboxRoot()).path
 
-  private fun execShell(command: String, dir: File): String {
-    val proc = ProcessBuilder("/system/bin/sh", "-c", command)
-        .directory(dir)
-        .redirectErrorStream(true)
-        .start()
-    val out = proc.inputStream.bufferedReader().use { it.readText() }
-    proc.waitFor()
-    return out.trimEnd()
+  private fun statusText(state: SandboxState, enabled: Boolean): String = when {
+    !enabled -> "Sandbox disabled"
+    state is SandboxState.NotInstalled -> "Sandbox not set up — tap Setup"
+    state is SandboxState.Downloading ->
+        "Downloading Alpine… ${(state.progress * 100).toInt()}%"
+    state is SandboxState.Extracting -> "Extracting rootfs…"
+    state is SandboxState.Installing -> state.detail.ifEmpty { "Installing…" }
+    state is SandboxState.Ready ->
+        if (sandbox.arePackagesInstalled()) "Sandbox ready (full toolset)" else "Sandbox ready"
+    state is SandboxState.Error -> "Error: ${state.message}"
+    else -> "Unknown"
+  }
+
+  /** Run a command in the persistent sandbox shell, combined output as one string. */
+  private fun execInSandbox(command: String, timeoutSeconds: Long = 120): String {
+    val result = runBlocking { sandbox.shell.run(command, timeoutSeconds = timeoutSeconds) }
+    val stdout = result["stdout"] as? String ?: ""
+    val stderr = result["stderr"] as? String ?: ""
+    val exit = result["exit_code"] as? Int ?: -1
+    val combined = listOf(stdout, stderr).filter { it.isNotBlank() }.joinToString("\n").trimEnd()
+    return if (combined.isEmpty() && exit != 0) "(exit $exit)" else combined
   }
 
   @ReactMethod
   fun sandboxStatus(promise: Promise) = io.execute {
-    val installed = File(sandboxRoot(), "root").exists()
+    val state = sandbox.state
     val enabled = prefs.getBoolean("sandbox_enabled", true)
+    val working = state is SandboxState.Downloading ||
+        state is SandboxState.Extracting ||
+        state is SandboxState.Installing
     promise.resolve(Arguments.createMap().apply {
-      putBoolean("installed", installed)
-      putBoolean("ready", installed && enabled)
-      putBoolean("working", installed && enabled)
-      putString(
-          "statusText",
-          when {
-            !enabled -> "Sandbox disabled"
-            installed -> "Sandbox ready"
-            else -> "Sandbox not set up — tap Setup"
-          },
-      )
+      putBoolean("installed", File(sandbox.rootfsPath).isDirectory)
+      putBoolean("ready", state is SandboxState.Ready && enabled)
+      putBoolean("working", working)
+      putString("statusText", statusText(state, enabled))
     })
   }
 
   @ReactMethod
-  fun setupSandbox(promise: Promise) = io.execute {
-    try {
-      val home = File(sandboxRoot(), "root").apply { mkdirs() }
-      File(home, "notes.txt").writeText("Welcome to the MVE Linux sandbox.\n")
-      promise.resolve(null)
-    } catch (e: Exception) {
-      promise.reject("mve_error", e)
-    }
+  fun setupSandbox(promise: Promise) {
+    // Runs on its own thread: setup can take minutes (rootfs download + apk
+    // update) and must not block the io executor that serves status polls.
+    Thread {
+      try {
+        if (sandbox.state is SandboxState.Ready) {
+          promise.resolve(null)
+          return@Thread
+        }
+        sandbox.setup()
+        val deadline = System.currentTimeMillis() + 30 * 60 * 1000
+        while (System.currentTimeMillis() < deadline) {
+          when (val s = sandbox.state) {
+            is SandboxState.Ready -> {
+              val welcome = File(sandboxRoot(), "notes.txt")
+              if (!welcome.exists()) {
+                welcome.writeText("Welcome to the MVE Linux sandbox.\n")
+              }
+              promise.resolve(null)
+              return@Thread
+            }
+            is SandboxState.Error -> {
+              promise.reject("mve_error", s.message)
+              return@Thread
+            }
+            else -> Thread.sleep(300)
+          }
+        }
+        promise.reject("mve_error", "Sandbox setup timed out")
+      } catch (e: Exception) {
+        promise.reject("mve_error", e)
+      }
+    }.start()
+  }
+
+  @ReactMethod
+  fun installSandboxPackages(promise: Promise) {
+    Thread {
+      try {
+        if (sandbox.state !is SandboxState.Ready) {
+          promise.reject("mve_error", "Set up the sandbox first")
+          return@Thread
+        }
+        sandbox.installPackages()
+        val deadline = System.currentTimeMillis() + 30 * 60 * 1000
+        while (System.currentTimeMillis() < deadline) {
+          when (val s = sandbox.state) {
+            is SandboxState.Ready -> { promise.resolve(null); return@Thread }
+            is SandboxState.Error -> { promise.reject("mve_error", s.message); return@Thread }
+            else -> Thread.sleep(300)
+          }
+        }
+        promise.reject("mve_error", "Package install timed out")
+      } catch (e: Exception) {
+        promise.reject("mve_error", e)
+      }
+    }.start()
   }
 
   @ReactMethod
   fun run(command: String, promise: Promise) = io.execute {
     try {
-      promise.resolve(execShell(command, sandboxRoot()))
+      if (!prefs.getBoolean("sandbox_enabled", true)) {
+        promise.resolve("Sandbox disabled — enable it in MVE Settings.")
+        return@execute
+      }
+      when (val s = sandbox.state) {
+        is SandboxState.Ready -> promise.resolve(execInSandbox(command))
+        is SandboxState.Error -> promise.resolve("sandbox error: ${s.message}")
+        is SandboxState.NotInstalled ->
+            promise.resolve("Sandbox not set up — open MVE Settings and tap Setup.")
+        else -> promise.resolve("Sandbox is busy: ${statusText(s, true)} — try again shortly.")
+      }
     } catch (e: Exception) {
       promise.resolve("error: ${e.message}")
     }
@@ -314,8 +392,13 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
           f.parentFile?.mkdirs()
           f.writeText(content)
           val output =
-              if (validateCommand.isBlank()) "validation skipped"
-              else execShell(validateCommand, sandboxRoot())
+              if (validateCommand.isBlank()) {
+                "validation skipped"
+              } else if (sandbox.state is SandboxState.Ready) {
+                execInSandbox(validateCommand)
+              } else {
+                "validation skipped - sandbox not ready"
+              }
           promise.resolve(Arguments.createMap().apply {
             putBoolean("saved", true)
             putString("output", output)

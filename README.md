@@ -49,10 +49,13 @@ same URL, so it stays current automatically.
 - **MVE engine** — summoned from anywhere with a right-swipe from the left
   edge, or via the ◎ taskbar button (which badges the count of open tasks).
   Context-first chat that records the **intent** behind every message so tasks
-  can be resumed, a **Linux sandbox terminal**, and provider/key management in
-  **MVE Settings**. The engine itself lives in the MorsVitaEst backend and is
-  reached over a native bridge; without it linked, a built-in mock keeps the
-  UI fully interactive.
+  can be resumed, and provider/key management in **MVE Settings**.
+- **Real Linux terminal** — the MVE Terminal tab runs a bundled **proot +
+  Alpine Linux** userland (the same sandbox the MorsVitaEst engine ships):
+  a persistent shell (bash once installed, busybox `sh` out of the box), the
+  full **`apk` package manager**, and an optional one-tap toolset install
+  (git, python3, node, ssh, rsync…) from MVE Settings. Termux-class ability,
+  no root required.
 - Native Kotlin bridge for app list/launch, battery, wallpaper, default-launcher
   role, system info, and notification mirroring — no third-party native dependency.
 

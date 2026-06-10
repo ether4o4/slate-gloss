@@ -31,6 +31,22 @@ const MveSettingsScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     setSbStatus(await MveBridge.sandboxStatus());
   };
 
+  // Long sandbox tasks (setup, toolset install) report progress through
+  // sandboxStatus, so poll while they run to keep the status line live.
+  const runLongTask = async (task: () => Promise<void>) => {
+    const timer = setInterval(() => {
+      refreshSandbox().catch(() => {});
+    }, 1000);
+    try {
+      await task();
+    } catch {
+      // statusText carries the error detail on the next refresh
+    } finally {
+      clearInterval(timer);
+      await refreshSandbox().catch(() => {});
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -131,14 +147,22 @@ const MveSettingsScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               {!sbStatus.installed && (
                 <TouchableOpacity
                   style={styles.setupBtn}
-                  onPress={async () => {
-                    await MveBridge.setupSandbox();
-                    await refreshSandbox();
-                  }}>
+                  onPress={() => runLongTask(() => MveBridge.setupSandbox())}>
                   <Text style={styles.setupBtnText}>Setup</Text>
                 </TouchableOpacity>
               )}
             </View>
+            {sbStatus.ready && !sbStatus.statusText.includes('full toolset') && (
+              <TouchableOpacity
+                style={[styles.setupBtn, styles.toolsetBtn]}
+                onPress={() =>
+                  runLongTask(() => MveBridge.installSandboxPackages())
+                }>
+                <Text style={styles.setupBtnText}>
+                  Install full toolset (git, python, node, ssh…)
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
         <ToggleRow
@@ -240,6 +264,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(120,170,235,0.6)',
   },
   setupBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 13 },
+  toolsetBtn: { marginTop: 10, alignSelf: 'flex-start' },
 });
 
 export default MveSettingsScreen;
