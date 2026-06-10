@@ -76,16 +76,16 @@ export const Tour: React.FC<Props> = ({
       done: notifAccess,
     },
     {
-      emoji: '✦',
-      title: 'Meet Swarm, your AI',
-      body: 'Swarm can run your launcher by voice/text — change themes, open & pin apps, toggle widgets. It is free: add a Groq key (console.groq.com/keys).',
-      action: { label: hasKey ? 'Open Swarm' : 'Add free key', run: onAddKey },
+      emoji: '◎',
+      title: 'Meet MVE, your engine',
+      body: 'MVE is the engine underneath NeverSoft — chat, tasks, memory and a Linux sandbox. Swipe right from the left edge (or tap ◎ on the taskbar) to summon it. Add a provider key in MVE Settings to go live.',
+      action: { label: hasKey ? 'Open MVE Settings' : 'Add a key', run: onAddKey },
       done: hasKey,
     },
     {
       emoji: '🚀',
       title: "You're all set",
-      body: "That's it. Long-press apps or the desktop for menus, tap the clock for widgets, and ask Swarm for anything. Enjoy NeverSoft OS!",
+      body: "That's it. Long-press apps or the desktop for menus, tap the clock for widgets, and ask MVE for anything. Enjoy NeverSoft OS!",
     },
   ];
 

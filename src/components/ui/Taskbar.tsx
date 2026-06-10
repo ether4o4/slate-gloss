@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import type { AppInfo } from '../../native/Launcher';
 import { Theme } from '../../theme';
@@ -11,8 +11,10 @@ interface Props {
   pinned: AppInfo[];
   colors: string[];
   startIconUri?: string;
+  /** Count of open MVE intents, shown as a badge on the MVE button. */
+  intentCount?: number;
   onStartPress: () => void;
-  onSwarmPress: () => void;
+  onMvePress: () => void;
   onClockPress: () => void;
   onLaunch: (pkg: string) => void;
   onPinMenu: (pkg: string) => void;
@@ -23,8 +25,9 @@ export const Taskbar: React.FC<Props> = ({
   pinned,
   colors,
   startIconUri,
+  intentCount = 0,
   onStartPress,
-  onSwarmPress,
+  onMvePress,
   onClockPress,
   onLaunch,
   onPinMenu,
@@ -80,10 +83,17 @@ export const Taskbar: React.FC<Props> = ({
       </ScrollView>
 
       <Pressable
-        onPress={onSwarmPress}
-        style={({ pressed }) => [styles.swarm, pressed && styles.pinPressed]}
+        onPress={onMvePress}
+        style={({ pressed }) => [styles.mve, pressed && styles.pinPressed]}
       >
-        <Text style={styles.swarmDot}>✦</Text>
+        <Text style={styles.mveDot}>◎</Text>
+        {intentCount > 0 && (
+          <View style={styles.mveBadge}>
+            <Text style={styles.mveBadgeText}>
+              {intentCount > 9 ? '9+' : intentCount}
+            </Text>
+          </View>
+        )}
       </Pressable>
 
       <Pressable
@@ -117,7 +127,7 @@ const styles = StyleSheet.create({
   pinContent: { alignItems: 'center', gap: 6, paddingHorizontal: 4 },
   pinBtn: { padding: 6, borderRadius: 10 },
   pinPressed: { backgroundColor: 'rgba(255,255,255,0.22)' },
-  swarm: {
+  mve: {
     width: 42,
     height: 42,
     borderRadius: 12,
@@ -127,7 +137,20 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: Theme.border,
   },
-  swarmDot: { color: '#bfe3ff', fontSize: 18 },
+  mveDot: { color: '#bfe3ff', fontSize: 18 },
+  mveBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(120,170,235,0.95)',
+  },
+  mveBadgeText: { color: '#ffffff', fontSize: 9, fontWeight: '700' },
   clock: {
     alignItems: 'flex-end',
     paddingHorizontal: 6,

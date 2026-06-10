@@ -9,10 +9,15 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {
+  Directions,
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 
-import { Theme, TASKBAR_PRESETS } from './src/theme';
-import { AI_THEMES, cheatsheetText } from './src/ai/tools';
-import type { ToolExecutor } from './src/api/DeepSeekService';
+import { Theme } from './src/theme';
 import { Desktop } from './src/components/ui/Desktop';
 import { Taskbar } from './src/components/ui/Taskbar';
 import { StartMenu } from './src/components/ui/StartMenu';
@@ -21,11 +26,14 @@ import { RecycleBin } from './src/components/ui/RecycleBin';
 import { Personalize } from './src/components/ui/Personalize';
 import { ContextMenu, type MenuItem } from './src/components/ui/ContextMenu';
 import { Tour } from './src/components/ui/Tour';
-import { hasApiKey } from './src/db/Settings';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import MveScreen from './src/mve/MveScreen';
+import MveSettingsScreen from './src/mve/MveSettingsScreen';
+import { MveBridge } from './src/mve/MveBridge';
+import { ActionRegistry, type Intent } from './src/mve/ActionRegistry';
+
 const TOUR_KEY = '@nsos_tour_done';
-import SwarmChatWindow from './src/components/SwarmChatWindow';
 import {
   getApps,
   isDefaultLauncher,
@@ -76,6 +84,19 @@ const TASKBAR_H = 64;
 const CELL_W = 84;
 const CELL_H = 96;
 
+/** True when any MVE provider instance has an API key configured. */
+const mveHasKey = async (): Promise<boolean> => {
+  try {
+    const services = await MveBridge.services();
+    const keys = await Promise.all(
+      services.map(s => MveBridge.getApiKey(s.instanceId)),
+    );
+    return keys.some(k => !!k);
+  } catch {
+    return false;
+  }
+};
+
 const App: React.FC = () => {
   const [apps, setApps] = useState<AppInfo[]>([]);
   const [, setLoading] = useState(true);
@@ -91,7 +112,8 @@ const App: React.FC = () => {
   const [weather, setWeather] = useState<Weather | null>(null);
 
   const [startOpen, setStartOpen] = useState(false);
-  const [swarmOpen, setSwarmOpen] = useState(false);
+  const [mveOpen, setMveOpen] = useState(false);
+  const [mveSettingsOpen, setMveSettingsOpen] = useState(false);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [recycleOpen, setRecycleOpen] = useState(false);
   const [personalizeOpen, setPersonalizeOpen] = useState(false);
@@ -101,6 +123,22 @@ const App: React.FC = () => {
   } | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const [hasKey, setHasKey] = useState(false);
+
+  // Open intents drive the taskbar MVE badge (context-first surfacing).
+  const [openIntents, setOpenIntents] = useState<Intent[]>([]);
+  useEffect(
+    () => ActionRegistry.subscribe(() => setOpenIntents(ActionRegistry.open())),
+    [],
+  );
+
+  const summonMve = useCallback(() => setMveOpen(true), []);
+
+  // System gesture: a right-fling from the left edge calls MVE up from anywhere.
+  const summonGesture = Gesture.Fling()
+    .direction(Directions.RIGHT)
+    .onEnd(() => {
+      runOnJS(summonMve)();
+    });
 
   const grid = useMemo(() => {
     const win = Dimensions.get('window');
@@ -141,7 +179,7 @@ const App: React.FC = () => {
     loadApps();
     loadState().then(setState);
     isDefaultLauncher().then(setIsDefault);
-    hasApiKey().then(setHasKey);
+    mveHasKey().then(setHasKey);
     refreshNotifications();
     // First launch → show the setup tour once.
     AsyncStorage.getItem(TOUR_KEY).then(done => {
@@ -153,7 +191,7 @@ const App: React.FC = () => {
     const appSub = AppState.addEventListener('change', s => {
       if (s === 'active') {
         isDefaultLauncher().then(setIsDefault);
-        hasApiKey().then(setHasKey);
+        mveHasKey().then(setHasKey);
         refreshNotifications();
       }
     });
@@ -374,138 +412,6 @@ const App: React.FC = () => {
     [update, snapToGrid],
   );
 
-  // ---- Swarm command sandbox (tool calls) ------------------------------
-
-  const findApp = useCallback(
-    (q: string): AppInfo | undefined => {
-      const s = (q || '').trim().toLowerCase();
-      if (!s) {
-        return undefined;
-      }
-      return (
-        apps.find(a => a.label.toLowerCase() === s) ||
-        apps.find(a => a.label.toLowerCase().startsWith(s)) ||
-        apps.find(a => a.label.toLowerCase().includes(s)) ||
-        apps.find(a => a.packageName.toLowerCase().includes(s))
-      );
-    },
-    [apps],
-  );
-
-  const allThemes = useMemo(() => [...TASKBAR_PRESETS, ...AI_THEMES], []);
-
-  const executeTool = useCallback<ToolExecutor>(
-    async (name, args) => {
-      switch (name) {
-        case 'list_commands':
-          return cheatsheetText();
-        case 'list_themes':
-          return allThemes.map(t => t.name).join(', ');
-        case 'apply_theme': {
-          const want = String(args.name || '').toLowerCase();
-          const t =
-            allThemes.find(x => x.name.toLowerCase() === want) ||
-            allThemes.find(x => want && x.name.toLowerCase().includes(want));
-          if (!t) {
-            return `No theme "${args.name}". Options: ${allThemes
-              .map(x => x.name)
-              .join(', ')}`;
-          }
-          update(s => setTaskbarColors(s, t.colors));
-          return `Applied "${t.name}".`;
-        }
-        case 'launch_app': {
-          const a = findApp(String(args.name || ''));
-          if (!a) {
-            return `No app matching "${args.name}".`;
-          }
-          launch(a.packageName);
-          return `Launched ${a.label}.`;
-        }
-        case 'pin_app': {
-          const a = findApp(String(args.name || ''));
-          if (!a) {
-            return `No app matching "${args.name}".`;
-          }
-          if (state?.pinned.includes(a.packageName)) {
-            return `${a.label} is already pinned.`;
-          }
-          update(s => togglePin(s, a.packageName));
-          return `Pinned ${a.label}.`;
-        }
-        case 'add_to_desktop': {
-          const a = findApp(String(args.name || ''));
-          if (!a) {
-            return `No app matching "${args.name}".`;
-          }
-          update(s => addToDesktop(s, a.packageName, grid.cols, grid.rows));
-          return `Added ${a.label} to the desktop.`;
-        }
-        case 'toggle_widget': {
-          const id = String(args.id || '').toLowerCase();
-          const valid = [
-            'calendar',
-            'notifications',
-            'weather',
-            'battery',
-            'system',
-            'notes',
-          ];
-          if (!valid.includes(id)) {
-            return `Unknown widget "${args.id}". Valid: ${valid.join(', ')}`;
-          }
-          const willEnable = !state?.widgets.includes(id);
-          update(s => toggleWidget(s, id));
-          return `${willEnable ? 'Enabled' : 'Disabled'} the ${id} widget.`;
-        }
-        case 'open_wallpaper_picker':
-          changeWallpaper();
-          return 'Opened the wallpaper picker.';
-        case 'open_start_icon_picker':
-          pickStart();
-          return 'Opened the image picker for the Start button.';
-        case 'set_default_launcher':
-          requestDefaultLauncher();
-          return 'Prompted to set NeverSoft OS as the default launcher.';
-        case 'get_status': {
-          const [b, sys] = await Promise.all([
-            getBatteryInfo(),
-            getSystemInfo(),
-          ]);
-          const now = new Date();
-          const parts = [
-            `Time ${now.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}`,
-            `Battery ${b.level}%${b.charging ? ' charging' : ''}`,
-            apps.length ? `${apps.length} apps installed` : '',
-          ];
-          if (sys) {
-            parts.push(
-              `RAM ${sys.ramUsedPct}% used`,
-              `Storage ${sys.storageUsedPct}% used`,
-            );
-          }
-          return parts.filter(Boolean).join(' · ');
-        }
-        default:
-          return `Unknown command: ${name}`;
-      }
-    },
-    [
-      allThemes,
-      findApp,
-      update,
-      launch,
-      state,
-      grid,
-      changeWallpaper,
-      pickStart,
-      apps,
-    ],
-  );
-
   const pinnedApps = useMemo(
     () =>
       (state?.pinned ?? []).map(p => appsByPkg[p]).filter(Boolean) as AppInfo[],
@@ -522,7 +428,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <View style={styles.root}>
+    <GestureHandlerRootView style={styles.root}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -557,14 +463,20 @@ const App: React.FC = () => {
         />
       </View>
 
+      {/* Left-edge summon strip: right-fling here calls MVE up. */}
+      <GestureDetector gesture={summonGesture}>
+        <View style={styles.summonEdge} pointerEvents="box-only" />
+      </GestureDetector>
+
       <View style={styles.taskbarDock}>
         <Taskbar
           startActive={startOpen}
           pinned={pinnedApps}
           colors={state.taskbarColors}
           startIconUri={state.startIcon || undefined}
+          intentCount={openIntents.length}
           onStartPress={() => setStartOpen(v => !v)}
-          onSwarmPress={() => setSwarmOpen(true)}
+          onMvePress={summonMve}
           onClockPress={() => {
             refreshNotifications();
             refreshWidgets();
@@ -597,9 +509,13 @@ const App: React.FC = () => {
           setStartOpen(false);
           requestDefaultLauncher();
         }}
-        onOpenSwarm={() => {
+        onOpenMve={() => {
           setStartOpen(false);
-          setSwarmOpen(true);
+          summonMve();
+        }}
+        onOpenMveSettings={() => {
+          setStartOpen(false);
+          setMveSettingsOpen(true);
         }}
       />
 
@@ -656,15 +572,25 @@ const App: React.FC = () => {
         }}
       />
 
+      {/* MVE engine page: chat + Linux sandbox terminal. */}
       <Modal
-        visible={swarmOpen}
+        visible={mveOpen}
         animationType="slide"
-        onRequestClose={() => setSwarmOpen(false)}
+        onRequestClose={() => setMveOpen(false)}
       >
-        <SwarmChatWindow
-          onClose={() => setSwarmOpen(false)}
-          executeTool={executeTool}
-        />
+        <MveScreen onClose={() => setMveOpen(false)} />
+      </Modal>
+
+      {/* MVE engine settings (providers, sandbox, daemon). */}
+      <Modal
+        visible={mveSettingsOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMveSettingsOpen(false)}
+      >
+        <View style={styles.mveModalOverlay}>
+          <MveSettingsScreen onClose={() => setMveSettingsOpen(false)} />
+        </View>
       </Modal>
 
       <ContextMenu
@@ -685,10 +611,10 @@ const App: React.FC = () => {
         onNotifAccess={openNotificationAccessSettings}
         onAddKey={() => {
           finishTour();
-          setSwarmOpen(true);
+          setMveSettingsOpen(true);
         }}
       />
-    </View>
+    </GestureHandlerRootView>
   );
 };
 
@@ -697,6 +623,20 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, paddingTop: STATUS_BAR, paddingBottom: TASKBAR_H },
   taskbarDock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  summonEdge: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: TASKBAR_H,
+    width: 16,
+  },
+  mveModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 16,
+  },
 });
 
 export default App;

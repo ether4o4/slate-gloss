@@ -3,8 +3,9 @@
 **NeverSoft OS** (NSOS) — a glossy glassmorphism **home-screen launcher**
 for Android by **NeverSoft Services**, built with React Native. A wallpaper
 desktop with placeable icons, an operational Recycle Bin, gadgets, a two-pane
-Start menu, a taskbar with a calendar/notification flyout, and **Swarm** — a
-built-in AI assistant (free Groq by default).
+Start menu, a taskbar with a calendar/notification flyout — all running on top
+of **MVE**, the engine underneath NeverSoft (chat, tasks, memory and a Linux
+sandbox), summoned with a swipe from the left edge or the ◎ taskbar button.
 
 ## 📥 Download the APK
 
@@ -24,8 +25,8 @@ same URL, so it stays current automatically.
 1. Open the link above on your Android phone and download the APK.
 2. Tap it and allow **“install from unknown sources.”**
 3. Open the app, then **Start ▸ “Set as default launcher”** to use it as home.
-4. For Swarm AI, tap **⚙** in the Swarm panel and paste a **free Groq API key**
-   (console.groq.com/keys) — stored only on your device, never committed.
+4. For AI, open **Start ▸ MVE Settings** and add a provider API key — stored
+   only on your device (in the MVE engine), never committed.
 5. Optional: grant **Notification access** (from the taskbar clock popup) to
    mirror notifications, and pick a **wallpaper** from Start ▸ Wallpaper.
 
@@ -45,10 +46,13 @@ same URL, so it stays current automatically.
   widget/notification flyout. **Customizable taskbar colors** + **custom Start
   button image** via the Personalize panel.
 - **Changeable wallpaper** (system wallpaper picker).
-- **Swarm AI** — reachable from the taskbar / Start menu, on-device history,
-  pluggable OpenAI-compatible provider (free **Groq** by default). It's
-  **agentic**: it can run launcher commands (apply themes, open/pin apps, toggle
-  widgets, change wallpaper, report status) and unlock **secret AI-only themes**.
+- **MVE engine** — summoned from anywhere with a right-swipe from the left
+  edge, or via the ◎ taskbar button (which badges the count of open tasks).
+  Context-first chat that records the **intent** behind every message so tasks
+  can be resumed, a **Linux sandbox terminal**, and provider/key management in
+  **MVE Settings**. The engine itself lives in the MorsVitaEst backend and is
+  reached over a native bridge; without it linked, a built-in mock keeps the
+  UI fully interactive.
 - Native Kotlin bridge for app list/launch, battery, wallpaper, default-launcher
   role, system info, and notification mirroring — no third-party native dependency.
 
@@ -62,31 +66,30 @@ minute.
 
 ## 🧱 Tech stack
 
-- React Native **0.73** (old architecture — chosen for build reliability)
+- React Native **0.81**
 - `react-native-linear-gradient` for the gloss
-- `@react-native-async-storage/async-storage` for layout, history, API key
-- `axios` for the OpenAI-compatible chat API
+- `react-native-gesture-handler` + `react-native-reanimated` for the MVE summon gesture
+- `@react-native-async-storage/async-storage` for layout and launcher state
 - Kotlin `LauncherModule` + `NotificationService` for native launcher features
+- Kotlin `MveBridgeModule` for the MVE engine bridge
 
 ## 📁 Project structure
 
 ```
 NeverSoft-OS/
-├── android/                      # Android native project (RN 0.73 template)
+├── android/                      # Android native project (RN 0.81 template)
 │   └── app/src/main/java/com/neversoftos/
 │       ├── MainActivity.kt
 │       ├── MainApplication.kt
 │       ├── LauncherModule.kt      # list/launch apps, default-launcher control
-│       └── LauncherPackage.kt
+│       ├── LauncherPackage.kt
+│       └── mve/                   # native bridge to the MVE engine
 ├── src/
-│   ├── components/
-│   │   ├── SwarmChatWindow.tsx
-│   │   └── ui/                 # Taskbar, StartOrb, StartMenu, Desktop, Personalize, …
-│   ├── api/{DeepSeekService,Weather}.ts
-│   ├── ai/tools.ts                # Swarm command sandbox + secret themes
-│   ├── db/{ChatPersistence,Settings,LauncherStore}.ts
+│   ├── components/ui/          # Taskbar, StartOrb, StartMenu, Desktop, Personalize, …
+│   ├── mve/                    # MveScreen, MveChat, MveSettings, ActionRegistry, bridge
+│   ├── api/Weather.ts
+│   ├── db/LauncherStore.ts
 │   ├── native/Launcher.ts
-│   ├── config.ts
 │   └── theme.ts
 ├── App.tsx
 └── .github/workflows/build-apk.yml
@@ -102,8 +105,8 @@ the rolling release URL above (it also uploads a `neversoft-os-apk` artifact on
 every run, including PRs).
 
 ### Local build
-**Prerequisites:** Android SDK (Platform 34, Build Tools 34.0.0), Java 17,
-Node 18+.
+**Prerequisites:** Android SDK (Platform 36, Build Tools 36.0.0), Java 17,
+Node 20+.
 
 ```bash
 npm install
@@ -123,10 +126,11 @@ wire the signing secrets; see `docs/ANDROID_BUILD_SETUP.md`.
 ---
 
 ## 🔒 Security note
-The AI provider API key (Groq by default) is **not** stored in source control.
-You enter it in-app and it is saved on-device only. Anything bundled into an APK
-can be extracted by decompiling it, so for a public release route requests
-through a backend proxy rather than shipping a key on-device.
+AI provider API keys are **not** stored in source control. You enter them in
+**MVE Settings** and they are saved on-device only, inside the MVE engine.
+Anything bundled into an APK can be extracted by decompiling it, so for a public
+release route requests through a backend proxy rather than shipping a key
+on-device.
 
 ---
 

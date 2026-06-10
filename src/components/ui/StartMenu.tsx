@@ -28,7 +28,8 @@ interface Props {
   onResize: (width: number, height: number) => void;
   onPersonalize: () => void;
   onSetDefault: () => void;
-  onOpenSwarm: () => void;
+  onOpenMve: () => void;
+  onOpenMveSettings: () => void;
 }
 
 const screen = Dimensions.get('window');
@@ -78,7 +79,8 @@ export const StartMenu: React.FC<Props> = ({
   onResize,
   onPersonalize,
   onSetDefault,
-  onOpenSwarm,
+  onOpenMve,
+  onOpenMveSettings,
 }) => {
   const [query, setQuery] = useState('');
   const [dims, setDims] = useState({
@@ -235,7 +237,12 @@ export const StartMenu: React.FC<Props> = ({
 
             {/* footer actions */}
             <View style={styles.footer}>
-              <FooterBtn icon="✦" label="Swarm" onPress={onOpenSwarm} />
+              <FooterBtn icon="◎" label="MVE" onPress={onOpenMve} />
+              <FooterBtn
+                icon="🛠"
+                label="MVE Settings"
+                onPress={onOpenMveSettings}
+              />
               <FooterBtn
                 icon="🎨"
                 label="Personalize"

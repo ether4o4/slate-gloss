@@ -4,21 +4,23 @@ import android.app.Application
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
+import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.ReactNativeHost
 import com.facebook.react.ReactPackage
-import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.load
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
-import com.facebook.soloader.SoLoader
 
 class MainApplication : Application(), ReactApplication {
 
   override val reactNativeHost: ReactNativeHost =
       object : DefaultReactNativeHost(this) {
-        override fun getPackages(): List<ReactPackage> {
-          // Autolinked packages + our local launcher bridge module.
-          return PackageList(this).packages.apply { add(LauncherPackage()) }
-        }
+        override fun getPackages(): List<ReactPackage> =
+            PackageList(this).packages.apply {
+              // Local launcher bridge (app list, wallpaper, widget host).
+              add(LauncherPackage())
+              // The native MVE engine bridge (chat, providers, sandbox).
+              add(com.neversoftos.mve.MvePackage())
+            }
 
         override fun getJSMainModuleName(): String = "index"
 
@@ -29,14 +31,10 @@ class MainApplication : Application(), ReactApplication {
       }
 
   override val reactHost: ReactHost
-    get() = getDefaultReactHost(this.applicationContext, reactNativeHost)
+    get() = getDefaultReactHost(applicationContext, reactNativeHost)
 
   override fun onCreate() {
     super.onCreate()
-    SoLoader.init(this, false)
-    if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
-      // If you opted-in for the New Architecture, we load the native entry point for this app.
-      load()
-    }
+    loadReactNative(this)
   }
 }
