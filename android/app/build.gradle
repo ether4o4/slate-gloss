@@ -3,9 +3,8 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 react {
-    /* Folders */
-    //   The root of your project, i.e. where "package.json" lives. Default is '..'
-    // root = file("../")
+    /* Autolinking */
+    autolinkLibrariesWithApp()
 }
 
 /**
@@ -66,5 +65,3 @@ dependencies {
         implementation jscFlavor
     }
 }
-
-apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
