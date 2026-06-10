@@ -144,7 +144,7 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun requestDefaultLauncher() {
-    val activity = currentActivity
+    val activity = reactContext.currentActivity
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && activity != null) {
       val rm = reactContext.getSystemService(Context.ROLE_SERVICE) as? RoleManager
       if (rm != null && rm.isRoleAvailable(RoleManager.ROLE_HOME) && !rm.isRoleHeld(RoleManager.ROLE_HOME)) {
@@ -160,7 +160,7 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun chooseWallpaper(promise: Promise) {
-    val activity = currentActivity
+    val activity = reactContext.currentActivity
     if (activity == null) {
       promise.reject("no_activity", "No current activity")
       return
@@ -180,7 +180,7 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun pickStartIcon(promise: Promise) {
-    val activity = currentActivity
+    val activity = reactContext.currentActivity
     if (activity == null) {
       promise.reject("no_activity", "No current activity")
       return
@@ -198,7 +198,7 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
     }
   }
 
-  override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?) {
+  override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
     when (requestCode) {
       REQ_WALLPAPER -> {
         val p = wallpaperPromise
@@ -275,7 +275,7 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
     }
   }
 
-  override fun onNewIntent(intent: Intent?) {}
+  override fun onNewIntent(intent: Intent) {}
 
   // ---- Battery ----------------------------------------------------------
 
@@ -302,7 +302,7 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
 
   @ReactMethod
   fun pickWidget(promise: Promise) {
-    val activity = currentActivity
+    val activity = reactContext.currentActivity
     if (activity == null) {
       promise.reject("no_activity", "No current activity")
       return
