@@ -123,6 +123,30 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
     promise.resolve(reply)
   }
 
+  // System prompt sent with every chat completion so the assistant knows its
+  // environment. Without it the model has no idea what NSOS, MVE, or the
+  // sandbox are and flails when asked about the shell.
+  private val systemPrompt =
+      """
+      You are the NeverSoft Service Assistant inside NeverSoft OS (NSOS), an Android launcher.
+      Environment facts:
+      1. NSOS bundles a real Linux sandbox: Alpine Linux under proot (no root). It has busybox,
+         bash, and the apk package manager. Internet works. Home is /root.
+      2. You cannot execute commands yourself. Only the user can: a chat message starting with
+         "${'$'} " is intercepted by the launcher and run in the real shell (it never reaches you),
+         and the "cmd" desktop icon opens a full terminal into the same shell.
+      3. The shell session is persistent - cd, exports, and files survive between commands.
+      4. For shell tasks, reply with the exact command on its own line prefixed "${'$'} ", one
+         command per line, so the user can copy it. Ask the user to paste output when you need it.
+      5. "apk add <pkg>" installs software. There is no PTY: vim, nano, htop, top and other
+         full-screen programs do not work - use cat, echo, sed, redirects, non-interactive flags.
+      6. The launcher handles "themes", "theme <name>" and "call you <name>" itself; you never
+         see those messages.
+      7. There is no "MVE${'$'}" program to exit and no chat to close - MVE is the engine you are
+         part of. Never try to quit, exit, or close anything.
+      Be concise and practical.
+      """.trimIndent()
+
   private fun chatCompletion(provider: ProviderDef): String {
     val url = URL(provider.baseUrl.trimEnd('/') + "/chat/completions")
     val conn = (url.openConnection() as HttpURLConnection).apply {
@@ -136,6 +160,7 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
     val body = JSONObject().apply {
       put("model", provider.model)
       put("messages", JSONArray().apply {
+        put(JSONObject().put("role", "system").put("content", systemPrompt))
         history.forEach { (role, content) ->
           put(JSONObject().put("role", role).put("content", content))
         }
