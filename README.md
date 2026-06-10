@@ -46,10 +46,22 @@ same URL, so it stays current automatically.
   widget/notification flyout. **Customizable taskbar colors** + **custom Start
   button image** via the Personalize panel.
 - **Changeable wallpaper** (system wallpaper picker).
-- **MVE engine** — summoned from anywhere with a right-swipe from the left
-  edge, or via the ◎ taskbar button (which badges the count of open tasks).
-  Context-first chat that records the **intent** behind every message so tasks
-  can be resumed, and provider/key management in **MVE Settings**.
+- **The MVE wall** — a full page to the **left of the home desktop** (swipe
+  right from the left edge, or tap the ◎ taskbar button, which badges the
+  count of open tasks): your own **news feed** with embedded tappable links,
+  and the **NeverSoft Service Assistant** at the bottom. The assistant handles
+  local commands before the engine — "themes" lists the design catalog,
+  "theme royale noir" switches the whole OS, "$ ls" runs in the real shell —
+  and records the **intent** behind every message so tasks can be resumed.
+  Provider/key management lives in **MVE Settings**.
+- **Classic desktop icons** — the permanent computer-styled shell set in
+  classic Windows order (Computer, Documents, Pictures, Music, Internet,
+  File Explorer, cmd, NeverSoft, Ghost Key, Google, Microsoft, Settings,
+  Recycle Bin) above your app grid. Folders open in **draggable, resizable
+  glass windows**; cmd opens the real terminal; Internet opens the browser
+  picker; Settings opens the **theme catalog** (Vista Aurora, Aero Graphite,
+  Emerald Bliss, Royale Noir, Sunset Ultimate, Longhorn Sky, Bubblegum Pop,
+  Arctic Frost — default is your own wallpaper).
 - **Real Linux terminal** — the MVE Terminal tab runs a bundled **proot +
   Alpine Linux** userland (the same sandbox the MorsVitaEst engine ships):
   a persistent shell (bash once installed, busybox `sh` out of the box), the
