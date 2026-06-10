@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Dimensions,
   Modal,
@@ -38,24 +38,6 @@ interface Props {
   onNotesChange: (text: string) => void;
 }
 
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-const buildMonth = (year: number, month: number): (number | null)[] => {
-  const first = new Date(year, month, 1).getDay();
-  const days = new Date(year, month + 1, 0).getDate();
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < first; i++) {
-    cells.push(null);
-  }
-  for (let d = 1; d <= days; d++) {
-    cells.push(d);
-  }
-  while (cells.length % 7 !== 0) {
-    cells.push(null);
-  }
-  return cells;
-};
-
 const Bar: React.FC<{ pct: number; color: string }> = ({ pct, color }) => (
   <View style={styles.barShell}>
     <View
@@ -86,25 +68,9 @@ export const SystemFlyout: React.FC<Props> = ({
   onNotesChange,
 }) => {
   const today = new Date();
-  const [view, setView] = useState({
-    y: today.getFullYear(),
-    m: today.getMonth(),
-  });
   const [picker, setPicker] = useState(false);
   const [notesEditor, setNotesEditor] = useState(false);
   const [noteDraft, setNoteDraft] = useState(notes);
-
-  const cells = useMemo(() => buildMonth(view.y, view.m), [view]);
-  const monthName = new Date(view.y, view.m, 1).toLocaleDateString([], {
-    month: 'long',
-    year: 'numeric',
-  });
-  const isThisMonth =
-    view.y === today.getFullYear() && view.m === today.getMonth();
-  const shift = (delta: number) => {
-    const d = new Date(view.y, view.m + delta, 1);
-    setView({ y: d.getFullYear(), m: d.getMonth() });
-  };
 
   const has = (id: string) => enabledWidgets.includes(id);
   const batColor =
@@ -145,53 +111,6 @@ export const SystemFlyout: React.FC<Props> = ({
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
-                {has('calendar') && (
-                  <View style={styles.card}>
-                    <View style={styles.calHeader}>
-                      <Pressable onPress={() => shift(-1)} hitSlop={10}>
-                        <Text style={styles.navArrow}>‹</Text>
-                      </Pressable>
-                      <Text style={styles.monthLabel}>{monthName}</Text>
-                      <Pressable onPress={() => shift(1)} hitSlop={10}>
-                        <Text style={styles.navArrow}>›</Text>
-                      </Pressable>
-                    </View>
-                    <View style={styles.weekRow}>
-                      {WEEKDAYS.map((d, i) => (
-                        <Text key={i} style={styles.weekday}>
-                          {d}
-                        </Text>
-                      ))}
-                    </View>
-                    <View style={styles.grid}>
-                      {cells.map((d, i) => {
-                        const isToday = isThisMonth && d === today.getDate();
-                        return (
-                          <View key={i} style={styles.dayCell}>
-                            {d != null && (
-                              <View
-                                style={[
-                                  styles.dayInner,
-                                  isToday && styles.todayInner,
-                                ]}
-                              >
-                                <Text
-                                  style={[
-                                    styles.dayText,
-                                    isToday && styles.todayText,
-                                  ]}
-                                >
-                                  {d}
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                        );
-                      })}
-                    </View>
-                  </View>
-                )}
-
                 {has('weather') && (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Weather</Text>
@@ -438,33 +357,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  navArrow: { color: Theme.text, fontSize: 24, paddingHorizontal: 8 },
-  monthLabel: { color: Theme.text, fontSize: 15, fontWeight: '600' },
-  weekRow: { flexDirection: 'row' },
-  weekday: {
-    flex: 1,
-    textAlign: 'center',
-    color: Theme.textDim,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  dayCell: {
-    width: `${100 / 7}%`,
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayInner: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  todayInner: { backgroundColor: Theme.accent },
-  dayText: { color: Theme.text, fontSize: 13 },
-  todayText: { color: '#fff', fontWeight: '700' },
   weatherRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   weatherIcon: { fontSize: 40 },
   weatherTemp: { color: Theme.text, fontSize: 26, fontWeight: '700' },

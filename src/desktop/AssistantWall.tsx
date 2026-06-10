@@ -13,6 +13,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -65,6 +66,7 @@ const AssistantWall: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [chatCollapsed, setChatCollapsed] = useState(false);
   const msgRef = useRef<FlatList<ChatMessage>>(null);
 
   useEffect(() => ThemeStore.subscribe(() => setAssistantName(ThemeStore.get().assistantName)), []);
@@ -160,9 +162,30 @@ const AssistantWall: React.FC = () => {
           )}
         </ScrollView>
 
-        {/* ── Assistant messages (bottom) ── */}
+        {/* ── Assistant messages (bottom, collapsible) ── */}
+        {chatCollapsed ? (
+          <TouchableOpacity
+            style={styles.collapsedBar}
+            activeOpacity={0.8}
+            onPress={() => setChatCollapsed(false)}
+          >
+            <Text style={styles.collapsedText}>▴ {assistantName}</Text>
+          </TouchableOpacity>
+        ) : (
         <View style={styles.assistantPanel}>
-          <Text style={styles.sectionLabel}>{assistantName}</Text>
+          <View style={styles.panelHeader}>
+            <Text style={styles.sectionLabel}>{assistantName}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                Keyboard.dismiss();
+                setChatCollapsed(true);
+              }}
+              hitSlop={10}
+              style={styles.collapseBtn}
+            >
+              <Text style={styles.collapseGlyph}>—</Text>
+            </TouchableOpacity>
+          </View>
           <FlatList
             ref={msgRef}
             data={messages}
@@ -195,6 +218,7 @@ const AssistantWall: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -298,6 +322,30 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     paddingHorizontal: 14,
     paddingTop: 8,
+  },
+  panelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  collapseBtn: {
+    paddingHorizontal: 14,
+    paddingTop: 8,
+  },
+  collapseGlyph: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '900' },
+  collapsedBar: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(20,34,52,0.35)',
+    paddingVertical: 9,
+    alignItems: 'center',
+  },
+  collapsedText: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   msgContent: { padding: 12, gap: 6 },
   bubble: { padding: 10, borderRadius: 10, maxWidth: '88%' },

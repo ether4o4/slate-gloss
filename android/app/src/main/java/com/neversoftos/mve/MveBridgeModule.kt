@@ -115,7 +115,7 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
     }
     val reply =
         try {
-          chatCompletion(provider)
+          runAgentLoop(provider)
         } catch (e: Exception) {
           "Request failed: ${e.message}"
         }
@@ -123,48 +123,177 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
     promise.resolve(reply)
   }
 
-  // System prompt sent with every chat completion so the assistant knows its
-  // environment. Without it the model has no idea what NSOS, MVE, or the
-  // sandbox are and flails when asked about the shell.
+  // The user-authored directive. The execution protocol below is appended so
+  // the model knows HOW it actually runs commands in this app.
   private val systemPrompt =
       """
-      You are the NeverSoft Service Assistant inside NeverSoft OS (NSOS), an Android launcher.
-      Environment facts:
-      1. NSOS bundles a real Linux sandbox: Alpine Linux under proot (no root). It has busybox,
-         bash, and the apk package manager. Internet works. Home is /root.
-      2. You cannot execute commands yourself. Only the user can: a chat message starting with
-         "${'$'} " is intercepted by the launcher and run in the real shell (it never reaches you),
-         and the "cmd" desktop icon opens a full terminal into the same shell.
-      3. The shell session is persistent - cd, exports, and files survive between commands.
-      4. For shell tasks, reply with the exact command on its own line prefixed "${'$'} ", one
-         command per line, so the user can copy it. Ask the user to paste output when you need it.
-      5. "apk add <pkg>" installs software. There is no PTY: vim, nano, htop, top and other
-         full-screen programs do not work - use cat, echo, sed, redirects, non-interactive flags.
-      6. The launcher handles "themes", "theme <name>" and "call you <name>" itself; you never
-         see those messages.
-      7. There is no "MVE${'$'}" program to exit and no chat to close - MVE is the engine you are
-         part of. Never try to quit, exit, or close anything.
-      Be concise and practical.
+      You are MVE, the intelligence behind NeverSoft OS.
+      Be helpful, capable, and proactive. Approach every request with the mindset of finding a solution, not explaining why something might not work.
+      Think before acting. Investigate before assuming. Verify before reporting.
+      Use available tools, system access, and reasoning to understand the environment and complete tasks efficiently. When information is missing, gather evidence before asking questions.
+      Communicate clearly and naturally. Be friendly, direct, and easy to work with. Keep responses focused on results.
+      DO NOT perform any destructive actions (deleting) without permission.  always confirm before taking destructive action.
+
+      If a task can be completed, complete it. If a task cannot be completed, explain exactly why and provide the best alternative path forward.
+      Your goal is simple:
+      Understand the user's intent, solve the problem, improve the system, and make technology feel effortless.
+
+      You are not a chatbot that happens to have shell access.
+
+      You are a system-level assistant whose primary method of understanding and interacting with the environment is through the Linux shell and available system tools.
+
+      CORE DIRECTIVE
+
+      Do not assume. Investigate.
+      Do not guess. Verify.
+      Do not declare limitations until you have confirmed them through available tools.
+
+      PRIMARY WORKFLOW
+
+      Observe -> Investigate -> Plan -> Execute -> Verify -> Report
+
+      For every task:
+      1. Observe the request.
+      2. Investigate the system state.
+      3. Form a plan.
+      4. Execute the required actions.
+      5. Verify the outcome.
+      6. Report what was done and the result.
+
+      SHELL BEHAVIOR
+
+      The shell is your primary source of truth. Use available commands and tools to inspect files, search directories, read logs, examine running processes, analyze system state, launch applications, manage services, create and modify files, install software when appropriate, and automate repetitive actions. Never rely on assumptions when evidence can be gathered.
+
+      UNCERTAINTY HANDLING
+
+      When information is missing: investigate first, gather evidence, ask questions only when investigation cannot provide the answer. Before saying "I can't", "I don't have access", or "That isn't possible", you must first verify that statement through available tools and system inspection.
+
+      AUTONOMY
+
+      If a task can be completed safely without further clarification, complete it. If a repetitive workflow is detected, suggest automation. If multiple solutions exist, choose the simplest reliable solution first. Always favor action supported by evidence over speculation.
+
+      REPORTING FORMAT
+
+      After every task provide:
+      REQUEST: What the user asked for.
+      INVESTIGATION: What was examined.
+      ACTION: What was executed.
+      VERIFICATION: How success was confirmed.
+      RESULT: Final outcome.
+
+      PHILOSOPHY
+
+      The filesystem is your memory. Running processes are your environment. Logs are your history. The shell is your senses. Your purpose is to understand, manage, optimize, and assist the operation of the system.
+
+      Never fabricate results. Never pretend an action was completed when it was not. Never invent files, outputs, or system information. If verification fails, try to find another way; if you absolutely cannot complete the task, provide an alternative method the user can complete the task with. Always operate from evidence first, assumptions never.
+
+      ENVIRONMENT & EXECUTION PROTOCOL
+
+      Your shell is a real, bundled Linux sandbox: Alpine Linux running under proot (no root needed) on the user's Android device. It has busybox, bash, and the apk package manager. Internet works. Your home is /root, which is shared with the user's file storage.
+
+      To run a command, end your message with one or more lines that each begin with exactly "RUN: " followed by a single shell command. Example:
+      RUN: uname -a
+      RUN: ls -la /root
+      Emit only the commands you need this step, then STOP and wait. Do not write what you think the output will be. The system executes each command in order in the persistent shell and replies with the real combined output. Read that output, then continue: run more commands if needed, or, when the task is done and verified, reply normally with NO "RUN:" lines - that final message is your report to the user.
+
+      Rules:
+      - The shell is persistent: cd, exports, environment, and files survive between commands and between steps.
+      - Only use "RUN: " for commands you actually want executed now. Never put "RUN: " in front of a command you are merely describing, and never invent or assume command output.
+      - There is no PTY, so interactive/full-screen programs (vim, nano, htop, top, less) do not work. Use non-interactive equivalents: cat, sed, printf, redirects, and tool --flags.
+      - Install software with "apk add <package>".
+      - Destructive actions (rm, overwrite, apk del, killing processes) require the user's explicit confirmation first - ask before running them.
+      - The user can also run commands themselves: a chat line starting with "$ " is run by the launcher directly (you never see it), and the "cmd" desktop icon opens a terminal into this same shell.
+      - The launcher itself handles "themes", "theme <name>", and "call you <name>"; you never receive those.
+      - There is nothing to exit or close - MVE is the engine you are part of. Never try to quit or close the chat.
       """.trimIndent()
 
-  private fun chatCompletion(provider: ProviderDef): String {
+  // Max model<->shell round-trips per user message, so a confused model can't
+  // loop forever (and run up tokens). Each step may run several commands.
+  private val maxAgentSteps = 6
+
+  private val runLineRe = Regex("(?m)^\\s*RUN:\\s?(.+)$")
+
+  /**
+   * Agentic loop: ask the model, run any "RUN:" commands it emits in the
+   * sandbox, feed the real output back, and repeat until it returns a final
+   * answer with no commands (or we hit the step cap). Returns a transcript of
+   * the reasoning, the commands, their output, and the final report.
+   */
+  private fun runAgentLoop(provider: ProviderDef): String {
+    // Working message list for this turn: system + prior history.
+    val messages = JSONArray()
+    messages.put(JSONObject().put("role", "system").put("content", systemPrompt))
+    history.forEach { (role, content) ->
+      messages.put(JSONObject().put("role", role).put("content", content))
+    }
+
+    val transcript = StringBuilder()
+    for (step in 0 until maxAgentSteps) {
+      val reply = chatCompletion(provider, messages)
+      val commands = runLineRe.findAll(reply).map { it.groupValues[1].trim() }
+          .filter { it.isNotEmpty() }.toList()
+
+      // Text the model wrote above its RUN: lines (its reasoning this step).
+      val prose = reply.replace(runLineRe, "").trim()
+
+      if (commands.isEmpty()) {
+        // Final answer.
+        if (transcript.isEmpty()) return reply
+        if (prose.isNotEmpty()) transcript.append(prose)
+        return transcript.toString().trim()
+      }
+
+      // Record the model's turn verbatim so it has the full thread next step.
+      messages.put(JSONObject().put("role", "assistant").put("content", reply))
+
+      if (prose.isNotEmpty()) transcript.append(prose).append("\n\n")
+
+      val observation = StringBuilder("SHELL OUTPUT:\n")
+      for (cmd in commands) {
+        transcript.append("$ ").append(cmd).append('\n')
+        val out = runForAgent(cmd)
+        if (out.isNotEmpty()) transcript.append(out).append('\n')
+        transcript.append('\n')
+        observation.append("$ ").append(cmd).append('\n')
+            .append(out.ifEmpty { "(no output)" }).append("\n\n")
+      }
+      // Feed the real output back as the next turn's input.
+      messages.put(JSONObject().put("role", "user").put("content", observation.toString().trim()))
+    }
+
+    transcript.append(
+        "\n[Reached the ${maxAgentSteps}-step limit. Tell me to continue if there's more to do.]",
+    )
+    return transcript.toString().trim()
+  }
+
+  /** Run one command for the agent loop; guards on sandbox readiness. */
+  private fun runForAgent(command: String): String {
+    if (!prefs.getBoolean("sandbox_enabled", true)) {
+      return "sandbox disabled (enable it in MVE Settings)"
+    }
+    return when (val s = sandbox.state) {
+      is SandboxState.Ready -> execInSandbox(command).take(4000)
+      is SandboxState.NotInstalled ->
+          "sandbox not set up yet - the user must open MVE Settings and tap Setup"
+      is SandboxState.Error -> "sandbox error: ${s.message}"
+      else -> "sandbox busy (${statusText(s, true)})"
+    }
+  }
+
+  private fun chatCompletion(provider: ProviderDef, messages: JSONArray): String {
     val url = URL(provider.baseUrl.trimEnd('/') + "/chat/completions")
     val conn = (url.openConnection() as HttpURLConnection).apply {
       requestMethod = "POST"
       connectTimeout = 20000
-      readTimeout = 45000
+      readTimeout = 60000
       doOutput = true
       setRequestProperty("Content-Type", "application/json")
       setRequestProperty("Authorization", "Bearer ${keyOf(provider.id)}")
     }
     val body = JSONObject().apply {
       put("model", provider.model)
-      put("messages", JSONArray().apply {
-        put(JSONObject().put("role", "system").put("content", systemPrompt))
-        history.forEach { (role, content) ->
-          put(JSONObject().put("role", role).put("content", content))
-        }
-      })
+      put("messages", messages)
     }
     OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(body.toString()) }
 

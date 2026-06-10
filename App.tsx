@@ -3,6 +3,9 @@ import {
   ActivityIndicator,
   AppState,
   Dimensions,
+  Image,
+  type ImageSourcePropType,
+  Linking,
   Modal,
   ScrollView,
   StatusBar,
@@ -119,33 +122,50 @@ const mveHasKey = async (): Promise<boolean> => {
 };
 
 // ── Classic desktop icons ──
-// The shipped/classic set, in classic Windows order: shell folders first
-// (Computer → Documents → Pictures → Music), then Internet, the file tools,
-// the brand/app shortcuts, Settings, and the Recycle Bin last. All permanent.
+// The shipped/classic set, in the old-school desktop order: Internet top-left,
+// Recycle Bin beside it, then the tools/utilities, Settings, and the Google /
+// Microsoft folders — shell folders and brand shortcuts after. All permanent.
 interface ClassicIconSpec {
   id: string;
   label: string;
   icon: string;
+  /** Custom image icon (wins over the emoji glyph when set). */
+  image?: ImageSourcePropType;
   /** Links an icon to its app on the Play Store (long-press → App settings). */
   pkg?: string;
   /** Optional red letters drawn over the icon glyph (e.g. "NS" on a folder). */
   badge?: string;
 }
 
+const ICONS = {
+  cmd: require('./src/assets/icons/cmd.png'),
+  clock: require('./src/assets/icons/clock.png'),
+  calendar: require('./src/assets/icons/calendar.png'),
+  camera: require('./src/assets/icons/camera.png'),
+  folder: require('./src/assets/icons/folder.png'),
+  phone: require('./src/assets/icons/phone.png'),
+  mail: require('./src/assets/icons/mail.png'),
+};
+
 const CLASSIC_ICONS: ClassicIconSpec[] = [
+  { id: 'internet', label: 'Internet', icon: '🌐' },
+  { id: 'recycle-bin', label: 'Recycle Bin', icon: '🗑️' },
+  { id: 'file-explorer', label: 'File Explorer', icon: '🗂️' },
+  { id: 'cmd', label: 'cmd', icon: '＞_', image: ICONS.cmd },
+  { id: 'settings', label: 'Settings', icon: '⚙️' },
+  { id: 'google', label: 'Google', icon: '📂', image: ICONS.folder },
+  { id: 'microsoft', label: 'Microsoft', icon: '🪟', image: ICONS.folder },
+  { id: 'phone', label: 'Phone', icon: '📞', image: ICONS.phone },
+  { id: 'messages', label: 'Messages', icon: '✉️', image: ICONS.mail },
+  { id: 'camera', label: 'Camera', icon: '📷', image: ICONS.camera },
+  { id: 'clock', label: 'Clock', icon: '⏰', image: ICONS.clock },
+  { id: 'calendar', label: 'Calendar', icon: '📅', image: ICONS.calendar },
   { id: 'computer', label: 'Computer', icon: '💻' },
-  { id: 'documents', label: 'Documents', icon: '📁' },
+  { id: 'documents', label: 'Documents', icon: '📁', image: ICONS.folder },
   { id: 'pictures', label: 'Pictures', icon: '🖼️' },
   { id: 'music', label: 'Music', icon: '🎵' },
-  { id: 'internet', label: 'Internet', icon: '🌐' },
-  { id: 'file-explorer', label: 'File Explorer', icon: '🗂️' },
-  { id: 'cmd', label: 'cmd', icon: '＞_' },
-  { id: 'neversoft', label: 'NeverSoft', icon: '📁', badge: 'NS' },
+  { id: 'neversoft', label: 'NeverSoft', icon: '📁', image: ICONS.folder, badge: 'NS' },
   { id: 'ghost-key', label: 'Ghost Key', icon: '🗝️', pkg: GHOST_KEY_PKG },
-  { id: 'google', label: 'Google', icon: '📂' },
-  { id: 'microsoft', label: 'Microsoft', icon: '🪟' },
-  { id: 'settings', label: 'Settings', icon: '⚙️' },
-  { id: 'recycle-bin', label: 'Recycle Bin', icon: '🗑️' },
 ];
 
 const ClassicIcon: React.FC<{
@@ -160,14 +180,25 @@ const ClassicIcon: React.FC<{
     delayLongPress={420}
     style={styles.classicIcon}
   >
-    <View style={styles.classicBox}>
-      <Text style={styles.classicGlyph}>{spec.icon}</Text>
-      {spec.badge ? (
-        <View style={styles.classicBadgeWrap} pointerEvents="none">
-          <Text style={styles.classicBadge}>{spec.badge}</Text>
-        </View>
-      ) : null}
-    </View>
+    {spec.image ? (
+      <View style={styles.classicBareBox}>
+        <Image source={spec.image} style={styles.classicImg} resizeMode="contain" />
+        {spec.badge ? (
+          <View style={styles.classicBadgeWrap} pointerEvents="none">
+            <Text style={styles.classicBadge}>{spec.badge}</Text>
+          </View>
+        ) : null}
+      </View>
+    ) : (
+      <View style={styles.classicBox}>
+        <Text style={styles.classicGlyph}>{spec.icon}</Text>
+        {spec.badge ? (
+          <View style={styles.classicBadgeWrap} pointerEvents="none">
+            <Text style={styles.classicBadge}>{spec.badge}</Text>
+          </View>
+        ) : null}
+      </View>
+    )}
     <Text style={styles.classicLabel} numberOfLines={1}>
       {spec.label}
     </Text>
@@ -349,6 +380,27 @@ const App: React.FC = () => {
           return;
         case 'recycle-bin':
           setRecycleOpen(true);
+          return;
+        case 'phone':
+          Linking.sendIntent('android.intent.action.DIAL').catch(() => {
+            Linking.openURL('tel:').catch(() => {});
+          });
+          return;
+        case 'messages':
+          Linking.openURL('sms:').catch(() => {});
+          return;
+        case 'camera':
+          Linking.sendIntent('android.media.action.STILL_IMAGE_CAMERA').catch(
+            () => openPlayStoreSearch('camera'),
+          );
+          return;
+        case 'clock':
+          Linking.sendIntent('android.intent.action.SHOW_ALARMS').catch(() =>
+            openAppOrStore('com.google.android.deskclock'),
+          );
+          return;
+        case 'calendar':
+          openAppOrStore('com.google.android.calendar');
           return;
         default:
           openWindow(spec.label);
@@ -897,6 +949,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.3)',
   },
   classicGlyph: { fontSize: 22 },
+  // Custom image icons render bare — no box, background, or border.
+  classicBareBox: {
+    width: 46,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  classicImg: { width: 46, height: 46 },
   classicBadgeWrap: {
     position: 'absolute',
     top: 2,

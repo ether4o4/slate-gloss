@@ -37,7 +37,6 @@ export interface LauncherState {
 
 /** All widgets available in the calendar/notification panel. */
 export const WIDGET_CATALOG: { id: string; name: string }[] = [
-  { id: 'calendar', name: 'Calendar' },
   { id: 'notifications', name: 'Notifications' },
   { id: 'weather', name: 'Weather' },
   { id: 'battery', name: 'Battery' },
@@ -61,7 +60,7 @@ const DEFAULT_STATE: LauncherState = {
   startSize: { width: 0, height: 0 }, // 0 = use default size
   taskbarColors: DEFAULT_TASKBAR_COLORS,
   startIcon: '',
-  widgets: ['calendar', 'notifications', 'weather', 'battery'],
+  widgets: ['notifications', 'weather', 'battery'],
   notes: '',
   desktopWidgets: [],
 };
