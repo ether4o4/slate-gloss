@@ -121,7 +121,7 @@ cd android && ./gradlew assembleRelease
 ### Signing
 CI publishes a **release** build signed with the standard debug keystore, so it
 installs on any device. For a Play-ready upload, swap in your own keystore and
-wire the signing secrets; see `docs/ANDROID_BUILD_SETUP.md`.
+wire the signing secrets in `android/app/build.gradle` and the CI workflow.
 
 ---
 
