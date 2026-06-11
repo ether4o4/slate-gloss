@@ -6,7 +6,14 @@
  * folders (which start empty).
  */
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { StoreApp, openPlayStore } from './storeLinks';
 
 const FolderWindow: React.FC<{ apps: StoreApp[]; emptyHint?: string }> = ({
@@ -26,9 +33,13 @@ const FolderWindow: React.FC<{ apps: StoreApp[]; emptyHint?: string }> = ({
             style={styles.tile}
             activeOpacity={0.75}
             onPress={() => openPlayStore(app.pkg)}>
-            <View style={styles.tileIconBox}>
-              <Text style={styles.tileIcon}>{app.icon}</Text>
-            </View>
+            {app.image ? (
+              <Image source={app.image} style={styles.tileImg} resizeMode="contain" />
+            ) : (
+              <View style={styles.tileIconBox}>
+                <Text style={styles.tileIcon}>{app.icon}</Text>
+              </View>
+            )}
             <Text style={styles.tileLabel} numberOfLines={1}>
               {app.label}
             </Text>
@@ -55,6 +66,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tileIcon: { fontSize: 22 },
+  tileImg: { width: 46, height: 46 },
   tileLabel: {
     color: '#ffffff',
     fontSize: 10,

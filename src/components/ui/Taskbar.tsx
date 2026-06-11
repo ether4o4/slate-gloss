@@ -12,6 +12,7 @@ import type { AppInfo } from '../../native/Launcher';
 import { Theme } from '../../theme';
 import { StartOrb } from './StartOrb';
 import { AppIconImage } from './Icon';
+import { RobotSprite } from '../../desktop/RobotSetup';
 
 const PHONE = require('../../assets/icons/phone.png');
 const MESSAGES = require('../../assets/icons/mail.png');
@@ -26,6 +27,8 @@ interface Props {
   intentCount?: number;
   /** Highlight the chat button while the chat window is open. */
   chatActive?: boolean;
+  /** The robot's paint job (tint wash), or null for factory black. */
+  robotTint?: string | null;
   onStartPress: () => void;
   onChatPress: () => void;
   onPhonePress: () => void;
@@ -43,6 +46,7 @@ export const Taskbar: React.FC<Props> = ({
   startIconUri,
   intentCount = 0,
   chatActive = false,
+  robotTint = null,
   onStartPress,
   onChatPress,
   onPhonePress,
@@ -130,7 +134,7 @@ export const Taskbar: React.FC<Props> = ({
           pressed && styles.pinPressed,
         ]}
       >
-        <Text style={styles.mveDot}>◎</Text>
+        <RobotSprite size={36} tint={robotTint} />
         {intentCount > 0 && (
           <View style={styles.mveBadge}>
             <Text style={styles.mveBadgeText}>

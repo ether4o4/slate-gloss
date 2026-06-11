@@ -5,15 +5,22 @@
  * Play Store (market:// first, https fallback), or launches the app itself
  * when it's already installed (openAppOrStore).
  */
-import { Linking } from 'react-native';
+import { type ImageSourcePropType, Linking } from 'react-native';
 
 export interface StoreApp {
   label: string;
   icon: string;
   pkg: string;
+  /** Custom image icon (wins over the emoji glyph when set). */
+  image?: ImageSourcePropType;
   /** Optional note shown in pickers ("rare find", etc.). */
   note?: string;
 }
+
+const ART = {
+  gmail: require('../assets/icons/gmail.png'),
+  youtube: require('../assets/icons/youtube.png'),
+};
 
 export async function openPlayStore(pkg: string): Promise<void> {
   const market = `market://details?id=${pkg}`;
@@ -82,11 +89,11 @@ export const GOOGLE_APPS: StoreApp[] = [
   { label: 'Google', icon: '🔍', pkg: 'com.google.android.googlequicksearchbox' },
   { label: 'Gemini', icon: '✨', pkg: 'com.google.android.apps.bard' },
   { label: 'Chrome', icon: '🌀', pkg: 'com.android.chrome' },
-  { label: 'Gmail', icon: '✉️', pkg: 'com.google.android.gm' },
+  { label: 'Gmail', icon: '✉️', image: ART.gmail, pkg: 'com.google.android.gm' },
   { label: 'Drive', icon: '🔺', pkg: 'com.google.android.apps.docs' },
   { label: 'Google One', icon: '🟡', pkg: 'com.google.android.apps.subscriptions.red' },
   { label: 'Maps', icon: '🗺️', pkg: 'com.google.android.apps.maps' },
-  { label: 'YouTube', icon: '▶️', pkg: 'com.google.android.youtube' },
+  { label: 'YouTube', icon: '▶️', image: ART.youtube, pkg: 'com.google.android.youtube' },
   { label: 'Photos', icon: '🌈', pkg: 'com.google.android.apps.photos' },
   { label: 'Meet', icon: '📹', pkg: 'com.google.android.apps.tachyon' },
   { label: 'Calendar', icon: '📅', pkg: 'com.google.android.calendar' },

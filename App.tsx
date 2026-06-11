@@ -46,6 +46,7 @@ import ThemePicker from './src/desktop/ThemePicker';
 import Calculator from './src/desktop/Calculator';
 import Notepad from './src/desktop/Notepad';
 import ChatWindow, { type ChatSize } from './src/desktop/ChatWindow';
+import RobotSetup, { type RobotPaint } from './src/desktop/RobotSetup';
 import WindowFrame from './src/components/glass/WindowFrame';
 import { ThemeStore } from './src/theme/themes';
 import {
@@ -105,7 +106,7 @@ const STATUS_BAR = StatusBar.currentHeight ?? 0;
 const TASKBAR_H = 64;
 const CELL_W = 84;
 const CELL_H = 96;
-const CLASSIC_COL_W = 84;
+const CLASSIC_COL_W = 176;
 const SCREEN_W = Dimensions.get('window').width;
 
 /** True when any MVE provider instance has an API key configured. */
@@ -139,7 +140,10 @@ interface ClassicIconSpec {
 
 const ICONS = {
   folder: require('./src/assets/icons/folder.png'),
+  calculator: require('./src/assets/icons/calculator.png'),
 };
+
+const ROBOT_PAINT_KEY = '@nsos_robot_paint';
 
 // Only the main shell icons, in a left column (Internet at the top). Google and
 // Microsoft are folders of app shortcuts. Phone/Messages/Camera live on the
@@ -147,7 +151,7 @@ const ICONS = {
 const CLASSIC_ICONS: ClassicIconSpec[] = [
   { id: 'internet', label: 'Internet', icon: '🌐' },
   { id: 'recycle-bin', label: 'Recycle Bin', icon: '🗑️' },
-  { id: 'calculator', label: 'Calculator', icon: '🧮' },
+  { id: 'calculator', label: 'Calculator', icon: '🧮', image: ICONS.calculator },
   { id: 'notepad', label: 'Notepad', icon: '📝' },
   { id: 'google', label: 'Google', icon: '📂', image: ICONS.folder },
   { id: 'microsoft', label: 'Microsoft', icon: '🪟', image: ICONS.folder },
@@ -215,6 +219,26 @@ const App: React.FC = () => {
   } | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const [hasKey, setHasKey] = useState(false);
+
+  // Robot paint: loaded from storage; first run shows the paint setup once the
+  // tour is out of the way. 'unset' = storage not read yet.
+  const [robotPaint, setRobotPaint] = useState<string | null | 'unset'>('unset');
+  const [robotSetupOpen, setRobotSetupOpen] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem(ROBOT_PAINT_KEY).then(v => {
+      if (v == null) {
+        setRobotPaint(null);
+        setRobotSetupOpen(true);
+      } else {
+        setRobotPaint(v === 'classic' ? null : v);
+      }
+    });
+  }, []);
+  const finishRobotSetup = useCallback((paint: RobotPaint) => {
+    AsyncStorage.setItem(ROBOT_PAINT_KEY, paint.color ?? 'classic');
+    setRobotPaint(paint.color);
+    setRobotSetupOpen(false);
+  }, []);
 
   // ── Classic shell: windows, browser picker, live theme ──
   const [openWindows, setOpenWindows] = useState<string[]>([]);
@@ -781,6 +805,7 @@ const App: React.FC = () => {
           startIconUri={state.startIcon || undefined}
           intentCount={openIntents.length}
           chatActive={chatOpen && chatSize !== 'min'}
+          robotTint={robotPaint === 'unset' ? null : robotPaint}
           onStartPress={() => setStartOpen(v => !v)}
           onChatPress={toggleChat}
           onPhonePress={openPhone}
@@ -925,6 +950,12 @@ const App: React.FC = () => {
           setMveSettingsOpen(true);
         }}
       />
+
+      {/* First-run robot paint (after the tour). */}
+      <RobotSetup
+        visible={robotSetupOpen && !tourOpen}
+        onDone={finishRobotSetup}
+      />
     </GestureHandlerRootView>
   );
 };
@@ -954,12 +985,14 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingLeft: 6,
     gap: 14,
-    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignContent: 'flex-start',
   },
-  classicIcon: { width: 72, alignItems: 'center', gap: 3 },
+  classicIcon: { width: 78, alignItems: 'center', gap: 3 },
   classicBox: {
-    width: 46,
-    height: 46,
+    width: 62,
+    height: 62,
     borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
@@ -967,15 +1000,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  classicGlyph: { fontSize: 22 },
+  classicGlyph: { fontSize: 30 },
   // Custom image icons render bare — no box, background, or border.
   classicBareBox: {
-    width: 46,
-    height: 46,
+    width: 62,
+    height: 62,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  classicImg: { width: 46, height: 46 },
+  classicImg: { width: 62, height: 62 },
   classicBadgeWrap: {
     position: 'absolute',
     top: 2,
@@ -990,7 +1023,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 1,
   },
   classicLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#ffffff',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
