@@ -30,6 +30,7 @@ interface Props {
   onSetDefault: () => void;
   onOpenMve: () => void;
   onOpenMveSettings: () => void;
+  onOpenCmd: () => void;
 }
 
 const screen = Dimensions.get('window');
@@ -81,6 +82,7 @@ export const StartMenu: React.FC<Props> = ({
   onSetDefault,
   onOpenMve,
   onOpenMveSettings,
+  onOpenCmd,
 }) => {
   const [query, setQuery] = useState('');
   const [dims, setDims] = useState({
@@ -238,6 +240,7 @@ export const StartMenu: React.FC<Props> = ({
             {/* footer actions */}
             <View style={styles.footer}>
               <FooterBtn icon="◎" label="MVE" onPress={onOpenMve} />
+              <FooterBtn icon="＞_" label="cmd" onPress={onOpenCmd} />
               <FooterBtn
                 icon="🛠"
                 label="MVE Settings"

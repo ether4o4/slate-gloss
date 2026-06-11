@@ -46,6 +46,7 @@ interface LauncherNativeModule {
   getNotifications(): Promise<NotificationInfo[]>;
   dismissNotification(key: string): void;
   pickStartIcon(): Promise<string>;
+  clearCache(): Promise<number>;
 }
 
 const native: LauncherNativeModule | undefined = NativeModules.LauncherModule;
@@ -168,6 +169,18 @@ export const getNotifications = async (): Promise<NotificationInfo[]> => {
 
 export const dismissNotification = (key: string): void =>
   native?.dismissNotification(key);
+
+/** Clear the launcher's own cache. Returns bytes freed. */
+export const clearCache = async (): Promise<number> => {
+  if (!native) {
+    return 0;
+  }
+  try {
+    return await native.clearCache();
+  } catch {
+    return 0;
+  }
+};
 
 /** Subscribe to "notifications changed" events. Returns an unsubscribe fn. */
 export const onNotificationsChanged = (cb: () => void): (() => void) => {

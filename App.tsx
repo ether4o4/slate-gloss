@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   AppState,
   Dimensions,
   Image,
@@ -42,18 +43,15 @@ import Terminal from './src/desktop/Terminal';
 import FolderWindow from './src/desktop/FolderWindow';
 import BrowserPicker from './src/desktop/BrowserPicker';
 import ThemePicker from './src/desktop/ThemePicker';
+import Calculator from './src/desktop/Calculator';
+import Notepad from './src/desktop/Notepad';
+import ChatWindow, { type ChatSize } from './src/desktop/ChatWindow';
 import WindowFrame from './src/components/glass/WindowFrame';
 import { ThemeStore } from './src/theme/themes';
 import {
-  GHOST_KEY_APK_URL,
-  GHOST_KEY_PKG,
   GOOGLE_APPS,
   MICROSOFT_APPS,
-  NEVERSOFT_GITHUB_URL,
-  openAppOrStore,
-  openPlayStore,
   openPlayStoreSearch,
-  openUrl,
 } from './src/desktop/storeLinks';
 
 const TOUR_KEY = '@nsos_tour_done';
@@ -63,6 +61,7 @@ import {
   launchApp as nativeLaunch,
   openAppInfo,
   uninstallApp,
+  clearCache,
   requestDefaultLauncher,
   chooseWallpaper,
   pickStartIcon,
@@ -106,6 +105,7 @@ const STATUS_BAR = StatusBar.currentHeight ?? 0;
 const TASKBAR_H = 64;
 const CELL_W = 84;
 const CELL_H = 96;
+const CLASSIC_COL_W = 84;
 const SCREEN_W = Dimensions.get('window').width;
 
 /** True when any MVE provider instance has an API key configured. */
@@ -138,34 +138,19 @@ interface ClassicIconSpec {
 }
 
 const ICONS = {
-  cmd: require('./src/assets/icons/cmd.png'),
-  clock: require('./src/assets/icons/clock.png'),
-  calendar: require('./src/assets/icons/calendar.png'),
-  camera: require('./src/assets/icons/camera.png'),
   folder: require('./src/assets/icons/folder.png'),
-  phone: require('./src/assets/icons/phone.png'),
-  mail: require('./src/assets/icons/mail.png'),
 };
 
+// Only the main shell icons, in a left column (Internet at the top). Google and
+// Microsoft are folders of app shortcuts. Phone/Messages/Camera live on the
+// taskbar, not here.
 const CLASSIC_ICONS: ClassicIconSpec[] = [
   { id: 'internet', label: 'Internet', icon: '🌐' },
   { id: 'recycle-bin', label: 'Recycle Bin', icon: '🗑️' },
-  { id: 'file-explorer', label: 'File Explorer', icon: '🗂️' },
-  { id: 'cmd', label: 'cmd', icon: '＞_', image: ICONS.cmd },
-  { id: 'settings', label: 'Settings', icon: '⚙️' },
+  { id: 'calculator', label: 'Calculator', icon: '🧮' },
+  { id: 'notepad', label: 'Notepad', icon: '📝' },
   { id: 'google', label: 'Google', icon: '📂', image: ICONS.folder },
   { id: 'microsoft', label: 'Microsoft', icon: '🪟', image: ICONS.folder },
-  { id: 'phone', label: 'Phone', icon: '📞', image: ICONS.phone },
-  { id: 'messages', label: 'Messages', icon: '✉️', image: ICONS.mail },
-  { id: 'camera', label: 'Camera', icon: '📷', image: ICONS.camera },
-  { id: 'clock', label: 'Clock', icon: '⏰', image: ICONS.clock },
-  { id: 'calendar', label: 'Calendar', icon: '📅', image: ICONS.calendar },
-  { id: 'computer', label: 'Computer', icon: '💻' },
-  { id: 'documents', label: 'Documents', icon: '📁', image: ICONS.folder },
-  { id: 'pictures', label: 'Pictures', icon: '🖼️' },
-  { id: 'music', label: 'Music', icon: '🎵' },
-  { id: 'neversoft', label: 'NeverSoft', icon: '📁', image: ICONS.folder, badge: 'NS' },
-  { id: 'ghost-key', label: 'Ghost Key', icon: '🗝️', pkg: GHOST_KEY_PKG },
 ];
 
 const ClassicIcon: React.FC<{
@@ -234,7 +219,9 @@ const App: React.FC = () => {
   // ── Classic shell: windows, browser picker, live theme ──
   const [openWindows, setOpenWindows] = useState<string[]>([]);
   const [browserPickerOpen, setBrowserPickerOpen] = useState(false);
-  const [classicH, setClassicH] = useState(0);
+  // Persistent floating chat: closed until first summon, then min/half/full.
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatSize, setChatSize] = useState<ChatSize>('half');
   const [theme, setTheme] = useState(() => ThemeStore.theme());
   useEffect(() => ThemeStore.subscribe(() => setTheme(ThemeStore.theme())), []);
 
@@ -252,6 +239,17 @@ const App: React.FC = () => {
     pagerRef.current?.scrollTo({ x: 0, animated: true });
   }, []);
 
+  // Taskbar chat button: open the floating chat, or restore it if minimized;
+  // pressing it while visible tucks it away (minimize) instead of closing.
+  const toggleChat = useCallback(() => {
+    if (!chatOpen) {
+      setChatOpen(true);
+      setChatSize('half');
+      return;
+    }
+    setChatSize(prev => (prev === 'min' ? 'half' : 'min'));
+  }, [chatOpen]);
+
   // System gesture: a right-fling from the left edge calls MVE up from anywhere.
   const summonGesture = Gesture.Fling()
     .direction(Directions.RIGHT)
@@ -261,13 +259,13 @@ const App: React.FC = () => {
 
   const grid = useMemo(() => {
     const win = Dimensions.get('window');
-    const usableW = win.width - 12;
-    // The classic icon block at the top of the desktop eats vertical space.
-    const usableH = win.height - STATUS_BAR - TASKBAR_H - 16 - classicH;
+    // The classic icon column hugs the far left; the app grid gets the rest.
+    const usableW = win.width - 12 - CLASSIC_COL_W;
+    const usableH = win.height - STATUS_BAR - TASKBAR_H - 16;
     const cols = Math.max(2, Math.floor(usableW / CELL_W));
-    const rows = Math.max(2, Math.floor(usableH / CELL_H) - 1);
+    const rows = Math.max(3, Math.floor(usableH / CELL_H) - 1);
     return { cols, rows };
-  }, [classicH]);
+  }, []);
 
   const appsByPkg = useMemo(() => {
     const map: Record<string, AppInfo> = {};
@@ -363,51 +361,40 @@ const App: React.FC = () => {
   const onClassicPress = useCallback(
     (spec: ClassicIconSpec) => {
       switch (spec.id) {
-        case 'neversoft':
-          // Permanent brand icon → straight to the NeverSoft GitHub.
-          openUrl(NEVERSOFT_GITHUB_URL);
-          return;
-        case 'ghost-key':
-          // The legit NeverSoft (Ghost Key) file explorer — launch it if
-          // installed, otherwise fetch the real APK.
-          openAppOrStore(GHOST_KEY_PKG, GHOST_KEY_APK_URL);
-          return;
-        case 'file-explorer':
-          openPlayStoreSearch('file explorer');
-          return;
         case 'internet':
           setBrowserPickerOpen(true);
           return;
         case 'recycle-bin':
           setRecycleOpen(true);
           return;
-        case 'phone':
-          Linking.sendIntent('android.intent.action.DIAL').catch(() => {
-            Linking.openURL('tel:').catch(() => {});
-          });
-          return;
-        case 'messages':
-          Linking.openURL('sms:').catch(() => {});
-          return;
-        case 'camera':
-          Linking.sendIntent('android.media.action.STILL_IMAGE_CAMERA').catch(
-            () => openPlayStoreSearch('camera'),
-          );
-          return;
-        case 'clock':
-          Linking.sendIntent('android.intent.action.SHOW_ALARMS').catch(() =>
-            openAppOrStore('com.google.android.deskclock'),
-          );
-          return;
-        case 'calendar':
-          openAppOrStore('com.google.android.calendar');
-          return;
         default:
+          // Calculator, Notepad, Google, Microsoft → desktop windows.
           openWindow(spec.label);
       }
     },
     [openWindow],
   );
+
+  // Taskbar device buttons: phone, messages, camera.
+  const openPhone = useCallback(() => {
+    Linking.sendIntent('android.intent.action.DIAL').catch(() => {
+      Linking.openURL('tel:').catch(() => {});
+    });
+  }, []);
+  const openMessages = useCallback(() => {
+    Linking.openURL('sms:').catch(() => {});
+  }, []);
+  const openCamera = useCallback(() => {
+    Linking.sendIntent('android.media.action.STILL_IMAGE_CAMERA').catch(() =>
+      openPlayStoreSearch('camera'),
+    );
+  }, []);
+
+  const doClearCache = useCallback(async () => {
+    const freed = await clearCache();
+    const mb = (freed / (1024 * 1024)).toFixed(1);
+    Alert.alert('Cache cleared', `Freed ${mb} MB.`);
+  }, []);
 
   const classicMenu = useCallback(
     (spec: ClassicIconSpec) => {
@@ -416,10 +403,9 @@ const App: React.FC = () => {
         items: [
           { label: 'Open', icon: '▶', onPress: () => onClassicPress(spec) },
           {
-            label: 'App settings',
-            icon: '⚙️',
-            onPress: () =>
-              spec.pkg ? openPlayStore(spec.pkg) : openWindow('Settings'),
+            label: 'Themes',
+            icon: '🖌️',
+            onPress: () => openWindow('Settings'),
           },
         ],
       });
@@ -431,6 +417,15 @@ const App: React.FC = () => {
     switch (title) {
       case 'cmd':
         return <Terminal />;
+      case 'Calculator':
+        return <Calculator />;
+      case 'Notepad':
+        return (
+          <Notepad
+            initial={state?.notes ?? ''}
+            onChange={text => update(s => setNotes(s, text))}
+          />
+        );
       case 'Google':
         return <FolderWindow apps={GOOGLE_APPS} />;
       case 'Microsoft':
@@ -450,6 +445,10 @@ const App: React.FC = () => {
     switch (title) {
       case 'cmd':
         return { width: Math.min(SCREEN_W - 24, 380), height: 440 };
+      case 'Calculator':
+        return { width: 300, height: 420 };
+      case 'Notepad':
+        return { width: Math.min(SCREEN_W - 24, 380), height: 420 };
       case 'Settings':
         return { width: 330, height: 430 };
       case 'Google':
@@ -698,12 +697,10 @@ const App: React.FC = () => {
         </View>
 
         {/* Home desktop */}
-        <View style={[styles.page, styles.body]}>
-          {/* Classic computer-styled shell icons, classic Windows order. */}
-          <View
-            style={styles.classicGrid}
-            onLayout={e => setClassicH(e.nativeEvent.layout.height)}
-          >
+        <View style={[styles.page, styles.body, styles.homeRow]}>
+          {/* Classic shell icons: a column hugging the far left, Internet on
+              top, the rest in order beneath it — the basic generic PC way. */}
+          <View style={styles.classicCol}>
             {CLASSIC_ICONS.map(spec => (
               <ClassicIcon
                 key={spec.id}
@@ -763,6 +760,19 @@ const App: React.FC = () => {
         <View style={styles.summonEdge} pointerEvents="box-only" />
       </GestureDetector>
 
+      {/* Persistent floating chat — lives above the desktop, never covers
+          the taskbar, survives navigation (state is module-level in MVE). */}
+      {chatOpen && (
+        <ChatWindow
+          size={chatSize}
+          taskbarH={TASKBAR_H}
+          statusBarH={STATUS_BAR}
+          assistantName={ThemeStore.get().assistantName}
+          onSize={setChatSize}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
+
       <View style={styles.taskbarDock}>
         <Taskbar
           startActive={startOpen}
@@ -770,8 +780,12 @@ const App: React.FC = () => {
           colors={state.taskbarColors}
           startIconUri={state.startIcon || undefined}
           intentCount={openIntents.length}
+          chatActive={chatOpen && chatSize !== 'min'}
           onStartPress={() => setStartOpen(v => !v)}
-          onMvePress={summonMve}
+          onChatPress={toggleChat}
+          onPhonePress={openPhone}
+          onMessagesPress={openMessages}
+          onCameraPress={openCamera}
           onClockPress={() => {
             refreshNotifications();
             refreshWidgets();
@@ -812,6 +826,10 @@ const App: React.FC = () => {
           setStartOpen(false);
           setMveSettingsOpen(true);
         }}
+        onOpenCmd={() => {
+          setStartOpen(false);
+          openWindow('cmd');
+        }}
       />
 
       <SystemFlyout
@@ -846,6 +864,7 @@ const App: React.FC = () => {
         }
         onEmpty={() => update(s => emptyRecycle(s))}
         onUninstall={pkg => uninstallApp(pkg)}
+        onClearCache={doClearCache}
       />
 
       <Personalize
@@ -929,15 +948,15 @@ const styles = StyleSheet.create({
     bottom: TASKBAR_H,
     width: 16,
   },
-  classicGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    paddingHorizontal: 10,
-    paddingTop: 6,
-    paddingBottom: 2,
+  homeRow: { flexDirection: 'row' },
+  classicCol: {
+    width: CLASSIC_COL_W,
+    paddingTop: 8,
+    paddingLeft: 6,
+    gap: 14,
+    alignItems: 'center',
   },
-  classicIcon: { width: 68, alignItems: 'center', gap: 3 },
+  classicIcon: { width: 72, alignItems: 'center', gap: 3 },
   classicBox: {
     width: 46,
     height: 46,

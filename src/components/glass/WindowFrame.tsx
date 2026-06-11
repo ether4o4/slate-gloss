@@ -16,7 +16,7 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const TASKBAR_CLEARANCE = 48;
+const TASKBAR_CLEARANCE = 70;
 
 export interface WindowFrameProps {
   title: string;

@@ -1,20 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import type { AppInfo } from '../../native/Launcher';
 import { Theme } from '../../theme';
 import { StartOrb } from './StartOrb';
 import { AppIconImage } from './Icon';
 
+const PHONE = require('../../assets/icons/phone.png');
+const MESSAGES = require('../../assets/icons/mail.png');
+const CAMERA = require('../../assets/icons/camera.png');
+
 interface Props {
   startActive: boolean;
   pinned: AppInfo[];
   colors: string[];
   startIconUri?: string;
-  /** Count of open MVE intents, shown as a badge on the MVE button. */
+  /** Count of open MVE intents, shown as a badge on the chat button. */
   intentCount?: number;
+  /** Highlight the chat button while the chat window is open. */
+  chatActive?: boolean;
   onStartPress: () => void;
-  onMvePress: () => void;
+  onChatPress: () => void;
+  onPhonePress: () => void;
+  onMessagesPress: () => void;
+  onCameraPress: () => void;
   onClockPress: () => void;
   onLaunch: (pkg: string) => void;
   onPinMenu: (pkg: string) => void;
@@ -26,8 +42,12 @@ export const Taskbar: React.FC<Props> = ({
   colors,
   startIconUri,
   intentCount = 0,
+  chatActive = false,
   onStartPress,
-  onMvePress,
+  onChatPress,
+  onPhonePress,
+  onMessagesPress,
+  onCameraPress,
   onClockPress,
   onLaunch,
   onPinMenu,
@@ -60,6 +80,26 @@ export const Taskbar: React.FC<Props> = ({
         imageUri={startIconUri}
       />
 
+      {/* Fixed device buttons: phone, messages, camera. */}
+      <Pressable
+        onPress={onPhonePress}
+        style={({ pressed }) => [styles.deviceBtn, pressed && styles.pinPressed]}
+      >
+        <Image source={PHONE} style={styles.deviceImg} resizeMode="contain" />
+      </Pressable>
+      <Pressable
+        onPress={onMessagesPress}
+        style={({ pressed }) => [styles.deviceBtn, pressed && styles.pinPressed]}
+      >
+        <Image source={MESSAGES} style={styles.deviceImg} resizeMode="contain" />
+      </Pressable>
+      <Pressable
+        onPress={onCameraPress}
+        style={({ pressed }) => [styles.deviceBtn, pressed && styles.pinPressed]}
+      >
+        <Image source={CAMERA} style={styles.deviceImg} resizeMode="contain" />
+      </Pressable>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -83,8 +123,12 @@ export const Taskbar: React.FC<Props> = ({
       </ScrollView>
 
       <Pressable
-        onPress={onMvePress}
-        style={({ pressed }) => [styles.mve, pressed && styles.pinPressed]}
+        onPress={onChatPress}
+        style={({ pressed }) => [
+          styles.mve,
+          chatActive && styles.mveActive,
+          pressed && styles.pinPressed,
+        ]}
       >
         <Text style={styles.mveDot}>◎</Text>
         {intentCount > 0 && (
@@ -120,9 +164,17 @@ const styles = StyleSheet.create({
     height: 64,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.35)',
-    gap: 8,
+    gap: 6,
   },
   topEdge: { position: 'absolute', top: 0, left: 0, right: 0, height: 2 },
+  deviceBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deviceImg: { width: 32, height: 32 },
   pinScroll: { flex: 1 },
   pinContent: { alignItems: 'center', gap: 6, paddingHorizontal: 4 },
   pinBtn: { padding: 6, borderRadius: 10 },
@@ -137,6 +189,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: Theme.border,
   },
+  mveActive: { backgroundColor: 'rgba(120,170,235,0.55)' },
   mveDot: { color: '#bfe3ff', fontSize: 18 },
   mveBadge: {
     position: 'absolute',

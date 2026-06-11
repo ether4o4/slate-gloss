@@ -79,26 +79,35 @@ export const BROWSERS: StoreApp[] = [
 ];
 
 export const GOOGLE_APPS: StoreApp[] = [
+  { label: 'Google', icon: '🔍', pkg: 'com.google.android.googlequicksearchbox' },
+  { label: 'Gemini', icon: '✨', pkg: 'com.google.android.apps.bard' },
   { label: 'Chrome', icon: '🌀', pkg: 'com.android.chrome' },
   { label: 'Gmail', icon: '✉️', pkg: 'com.google.android.gm' },
+  { label: 'Drive', icon: '🔺', pkg: 'com.google.android.apps.docs' },
+  { label: 'Google One', icon: '🟡', pkg: 'com.google.android.apps.subscriptions.red' },
   { label: 'Maps', icon: '🗺️', pkg: 'com.google.android.apps.maps' },
   { label: 'YouTube', icon: '▶️', pkg: 'com.google.android.youtube' },
-  { label: 'Drive', icon: '🔺', pkg: 'com.google.android.apps.docs' },
   { label: 'Photos', icon: '🌈', pkg: 'com.google.android.apps.photos' },
+  { label: 'Meet', icon: '📹', pkg: 'com.google.android.apps.tachyon' },
   { label: 'Calendar', icon: '📅', pkg: 'com.google.android.calendar' },
   { label: 'Keep', icon: '📝', pkg: 'com.google.android.keep' },
   { label: 'Files', icon: '🗂️', pkg: 'com.google.android.apps.nbu.files' },
+  { label: 'Play Store', icon: '🛍️', pkg: 'com.android.vending' },
+  { label: 'Wallet', icon: '💳', pkg: 'com.google.android.apps.walletnfcrel' },
   { label: 'Translate', icon: '🌐', pkg: 'com.google.android.apps.translate' },
 ];
 
 export const MICROSOFT_APPS: StoreApp[] = [
+  { label: 'Microsoft 365', icon: '🅾️', pkg: 'com.microsoft.office.officehubrow' },
+  { label: 'Outlook', icon: '📨', pkg: 'com.microsoft.office.outlook' },
+  { label: 'OneDrive', icon: '☁️', pkg: 'com.microsoft.skydrive' },
   { label: 'Word', icon: '🟦', pkg: 'com.microsoft.office.word' },
   { label: 'Excel', icon: '🟩', pkg: 'com.microsoft.office.excel' },
   { label: 'PowerPoint', icon: '🟧', pkg: 'com.microsoft.office.powerpoint' },
-  { label: 'Outlook', icon: '📨', pkg: 'com.microsoft.office.outlook' },
+  { label: 'OneNote', icon: '🗒️', pkg: 'com.microsoft.office.onenote' },
   { label: 'Teams', icon: '👥', pkg: 'com.microsoft.teams' },
-  { label: 'OneDrive', icon: '☁️', pkg: 'com.microsoft.skydrive' },
   { label: 'Edge', icon: '🌊', pkg: 'com.microsoft.emmx' },
   { label: 'Copilot', icon: '🤖', pkg: 'com.microsoft.copilot' },
-  { label: 'OneNote', icon: '🗒️', pkg: 'com.microsoft.office.onenote' },
+  { label: 'To Do', icon: '✅', pkg: 'com.microsoft.todos' },
+  { label: 'Authenticator', icon: '🔐', pkg: 'com.azure.authenticator' },
 ];

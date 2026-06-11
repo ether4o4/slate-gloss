@@ -22,6 +22,7 @@ interface Props {
   onRestore: (pkg: string) => void;
   onEmpty: () => void;
   onUninstall: (pkg: string) => void;
+  onClearCache: () => void;
 }
 
 export const RecycleBin: React.FC<Props> = ({
@@ -32,6 +33,7 @@ export const RecycleBin: React.FC<Props> = ({
   onRestore,
   onEmpty,
   onUninstall,
+  onClearCache,
 }) => {
   const confirmEmpty = () => {
     if (items.length === 0) {
@@ -41,6 +43,17 @@ export const RecycleBin: React.FC<Props> = ({
       { text: 'Cancel', style: 'cancel' },
       { text: 'Empty', style: 'destructive', onPress: onEmpty },
     ]);
+  };
+
+  const confirmClearCache = () => {
+    Alert.alert(
+      'Clear cache',
+      "Clear NeverSoft OS's cached files? This frees space and won't remove your apps or settings.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear', style: 'destructive', onPress: onClearCache },
+      ],
+    );
   };
 
   return (
@@ -102,6 +115,9 @@ export const RecycleBin: React.FC<Props> = ({
             >
               <Text style={styles.emptyBtnText}>Empty Recycle Bin</Text>
             </Pressable>
+            <Pressable onPress={confirmClearCache} style={styles.cacheBtn}>
+              <Text style={styles.cacheBtnText}>🧹 Clear cache</Text>
+            </Pressable>
           </GlassSurface>
         </Pressable>
       </Pressable>
@@ -146,6 +162,14 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.4 },
   emptyBtnText: { color: '#fff', fontWeight: '700' },
+  cacheBtn: {
+    marginTop: 8,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  cacheBtnText: { color: '#eaf4ff', fontWeight: '700' },
 });
 
 export default RecycleBin;

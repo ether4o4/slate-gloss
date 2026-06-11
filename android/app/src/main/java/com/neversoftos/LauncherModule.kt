@@ -298,6 +298,38 @@ class LauncherModule(private val reactContext: ReactApplicationContext) :
     }
   }
 
+  // ---- Cache ------------------------------------------------------------
+
+  /**
+   * Clear the launcher's own caches (internal + external cache dirs). An app
+   * can only clear its own cache without special privileges; this frees the
+   * space NSOS itself is holding. Returns the number of bytes removed.
+   */
+  @ReactMethod
+  fun clearCache(promise: Promise) {
+    try {
+      var freed = 0L
+      val dirs = listOfNotNull(reactContext.cacheDir, reactContext.externalCacheDir)
+      for (dir in dirs) {
+        dir.listFiles()?.forEach { freed += deleteRecursive(it) }
+      }
+      promise.resolve(freed.toDouble())
+    } catch (e: Exception) {
+      promise.reject("clear_cache_failed", e.message, e)
+    }
+  }
+
+  private fun deleteRecursive(file: File): Long {
+    var total = 0L
+    if (file.isDirectory) {
+      file.listFiles()?.forEach { total += deleteRecursive(it) }
+    } else {
+      total += file.length()
+    }
+    file.delete()
+    return total
+  }
+
   // ---- App widgets (hosting) -------------------------------------------
 
   @ReactMethod
