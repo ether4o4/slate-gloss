@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { StoreApp, openPlayStore } from './storeLinks';
 
 const FolderWindow: React.FC<{ apps: StoreApp[]; emptyHint?: string }> = ({
@@ -35,6 +36,20 @@ const FolderWindow: React.FC<{ apps: StoreApp[]; emptyHint?: string }> = ({
             onPress={() => openPlayStore(app.pkg)}>
             {app.image ? (
               <Image source={app.image} style={styles.tileImg} resizeMode="contain" />
+            ) : app.tile ? (
+              <LinearGradient
+                colors={app.tile.colors}
+                start={{ x: 0.1, y: 0 }}
+                end={{ x: 0.9, y: 1 }}
+                style={styles.glossTile}
+              >
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.05)']}
+                  style={styles.glossSheen}
+                  pointerEvents="none"
+                />
+                <Text style={styles.glossGlyph}>{app.tile.glyph}</Text>
+              </LinearGradient>
             ) : (
               <View style={styles.tileIconBox}>
                 <Text style={styles.tileIcon}>{app.icon}</Text>
@@ -66,6 +81,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tileIcon: { fontSize: 22 },
+  // Glossy macOS-style squircle: brand gradient + top sheen + bold glyph.
+  glossTile: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.45)',
+    elevation: 3,
+  },
+  glossSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 22,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  glossGlyph: {
+    color: '#ffffff',
+    fontSize: 19,
+    fontWeight: '800',
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   tileImg: { width: 46, height: 46 },
   tileLabel: {
     color: '#ffffff',

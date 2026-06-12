@@ -11,8 +11,10 @@ export interface StoreApp {
   label: string;
   icon: string;
   pkg: string;
-  /** Custom image icon (wins over the emoji glyph when set). */
+  /** Custom image icon (wins over everything when set). */
   image?: ImageSourcePropType;
+  /** Glossy macOS-style tile: brand gradient + glyph. */
+  tile?: { colors: [string, string]; glyph: string };
   /** Optional note shown in pickers ("rare find", etc.). */
   note?: string;
 }
@@ -82,39 +84,39 @@ export const BROWSERS: StoreApp[] = [
   { label: 'DuckDuckGo', icon: '🦆', pkg: 'com.duckduckgo.mobile.android', note: 'privacy first' },
   { label: 'Opera GX', icon: '🎮', pkg: 'com.opera.gx', note: 'the gaming browser' },
   { label: 'Firefox', icon: '🔥', pkg: 'org.mozilla.firefox' },
-  { label: 'Chrome', icon: '🌀', pkg: 'com.android.chrome' },
+  { label: 'Chrome', icon: '🌀', pkg: 'com.android.chrome', tile: { colors: ['#57c065', '#2f7bf6'], glyph: 'C' }, },
 ];
 
 export const GOOGLE_APPS: StoreApp[] = [
-  { label: 'Google', icon: '🔍', pkg: 'com.google.android.googlequicksearchbox' },
-  { label: 'Gemini', icon: '✨', pkg: 'com.google.android.apps.bard' },
-  { label: 'Chrome', icon: '🌀', pkg: 'com.android.chrome' },
+  { label: 'Google', icon: '🔍', pkg: 'com.google.android.googlequicksearchbox', tile: { colors: ['#5b8def', '#1a73e8'], glyph: 'G' }, },
+  { label: 'Gemini', icon: '✨', pkg: 'com.google.android.apps.bard', tile: { colors: ['#9b8cff', '#4e8df5'], glyph: '✦' }, },
+  { label: 'Chrome', icon: '🌀', pkg: 'com.android.chrome', tile: { colors: ['#57c065', '#2f7bf6'], glyph: 'C' } },
   { label: 'Gmail', icon: '✉️', image: ART.gmail, pkg: 'com.google.android.gm' },
-  { label: 'Drive', icon: '🔺', pkg: 'com.google.android.apps.docs' },
-  { label: 'Google One', icon: '🟡', pkg: 'com.google.android.apps.subscriptions.red' },
-  { label: 'Maps', icon: '🗺️', pkg: 'com.google.android.apps.maps' },
+  { label: 'Drive', icon: '🔺', pkg: 'com.google.android.apps.docs', tile: { colors: ['#ffd54f', '#34a853'], glyph: '▲' }, },
+  { label: 'Google One', icon: '🟡', pkg: 'com.google.android.apps.subscriptions.red', tile: { colors: ['#fbbc04', '#ea4335'], glyph: '1' }, },
+  { label: 'Maps', icon: '🗺️', pkg: 'com.google.android.apps.maps', tile: { colors: ['#34a853', '#1a73e8'], glyph: '◆' }, },
   { label: 'YouTube', icon: '▶️', image: ART.youtube, pkg: 'com.google.android.youtube' },
-  { label: 'Photos', icon: '🌈', pkg: 'com.google.android.apps.photos' },
-  { label: 'Meet', icon: '📹', pkg: 'com.google.android.apps.tachyon' },
-  { label: 'Calendar', icon: '📅', pkg: 'com.google.android.calendar' },
-  { label: 'Keep', icon: '📝', pkg: 'com.google.android.keep' },
-  { label: 'Files', icon: '🗂️', pkg: 'com.google.android.apps.nbu.files' },
-  { label: 'Play Store', icon: '🛍️', pkg: 'com.android.vending' },
-  { label: 'Wallet', icon: '💳', pkg: 'com.google.android.apps.walletnfcrel' },
-  { label: 'Translate', icon: '🌐', pkg: 'com.google.android.apps.translate' },
+  { label: 'Photos', icon: '🌈', pkg: 'com.google.android.apps.photos', tile: { colors: ['#ff8a80', '#fbbc04'], glyph: '✿' }, },
+  { label: 'Meet', icon: '📹', pkg: 'com.google.android.apps.tachyon', tile: { colors: ['#26c6a2', '#0f9d58'], glyph: 'M' }, },
+  { label: 'Calendar', icon: '📅', pkg: 'com.google.android.calendar', tile: { colors: ['#4d90fe', '#1a5dc8'], glyph: '31' }, },
+  { label: 'Keep', icon: '📝', pkg: 'com.google.android.keep', tile: { colors: ['#ffe066', '#f9ab00'], glyph: 'K' }, },
+  { label: 'Files', icon: '🗂️', pkg: 'com.google.android.apps.nbu.files', tile: { colors: ['#42a5f5', '#0b8043'], glyph: 'F' }, },
+  { label: 'Play Store', icon: '🛍️', pkg: 'com.android.vending', tile: { colors: ['#34d2eb', '#34a853'], glyph: '▶' }, },
+  { label: 'Wallet', icon: '💳', pkg: 'com.google.android.apps.walletnfcrel', tile: { colors: ['#6ea8ff', '#34a853'], glyph: 'W' }, },
+  { label: 'Translate', icon: '🌐', pkg: 'com.google.android.apps.translate', tile: { colors: ['#7bb4ff', '#2e7d32'], glyph: '文' }, },
 ];
 
 export const MICROSOFT_APPS: StoreApp[] = [
-  { label: 'Microsoft 365', icon: '🅾️', pkg: 'com.microsoft.office.officehubrow' },
-  { label: 'Outlook', icon: '📨', pkg: 'com.microsoft.office.outlook' },
-  { label: 'OneDrive', icon: '☁️', pkg: 'com.microsoft.skydrive' },
-  { label: 'Word', icon: '🟦', pkg: 'com.microsoft.office.word' },
-  { label: 'Excel', icon: '🟩', pkg: 'com.microsoft.office.excel' },
-  { label: 'PowerPoint', icon: '🟧', pkg: 'com.microsoft.office.powerpoint' },
-  { label: 'OneNote', icon: '🗒️', pkg: 'com.microsoft.office.onenote' },
-  { label: 'Teams', icon: '👥', pkg: 'com.microsoft.teams' },
-  { label: 'Edge', icon: '🌊', pkg: 'com.microsoft.emmx' },
-  { label: 'Copilot', icon: '🤖', pkg: 'com.microsoft.copilot' },
-  { label: 'To Do', icon: '✅', pkg: 'com.microsoft.todos' },
-  { label: 'Authenticator', icon: '🔐', pkg: 'com.azure.authenticator' },
+  { label: 'Microsoft 365', icon: '🅾️', pkg: 'com.microsoft.office.officehubrow', tile: { colors: ['#ff7a59', '#d83b01'], glyph: '365' }, },
+  { label: 'Outlook', icon: '📨', pkg: 'com.microsoft.office.outlook', tile: { colors: ['#41a4e6', '#0f6cbd'], glyph: 'O' }, },
+  { label: 'OneDrive', icon: '☁️', pkg: 'com.microsoft.skydrive', tile: { colors: ['#54b4ef', '#0364b8'], glyph: '☁' }, },
+  { label: 'Word', icon: '🟦', pkg: 'com.microsoft.office.word', tile: { colors: ['#5b9bd5', '#185abd'], glyph: 'W' }, },
+  { label: 'Excel', icon: '🟩', pkg: 'com.microsoft.office.excel', tile: { colors: ['#4ec07a', '#107c41'], glyph: 'X' }, },
+  { label: 'PowerPoint', icon: '🟧', pkg: 'com.microsoft.office.powerpoint', tile: { colors: ['#ff8f6b', '#c43e1c'], glyph: 'P' }, },
+  { label: 'OneNote', icon: '🗒️', pkg: 'com.microsoft.office.onenote', tile: { colors: ['#b06ad4', '#7719aa'], glyph: 'N' }, },
+  { label: 'Teams', icon: '👥', pkg: 'com.microsoft.teams', tile: { colors: ['#8b93f8', '#4b53bc'], glyph: 'T' }, },
+  { label: 'Edge', icon: '🌊', pkg: 'com.microsoft.emmx', tile: { colors: ['#49d2c5', '#0c59a4'], glyph: 'e' }, },
+  { label: 'Copilot', icon: '🤖', pkg: 'com.microsoft.copilot', tile: { colors: ['#9fc4ff', '#7a5af8'], glyph: '◈' }, },
+  { label: 'To Do', icon: '✅', pkg: 'com.microsoft.todos', tile: { colors: ['#79a7ff', '#2564cf'], glyph: '✓' }, },
+  { label: 'Authenticator', icon: '🔐', pkg: 'com.azure.authenticator', tile: { colors: ['#5fa8e8', '#005a9e'], glyph: 'A' }, },
 ];
