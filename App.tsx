@@ -41,7 +41,6 @@ import { ActionRegistry, type Intent } from './src/mve/ActionRegistry';
 import AssistantWall from './src/desktop/AssistantWall';
 import Terminal from './src/desktop/Terminal';
 import FolderWindow from './src/desktop/FolderWindow';
-import BrowserPicker from './src/desktop/BrowserPicker';
 import ThemePicker from './src/desktop/ThemePicker';
 import Calculator from './src/desktop/Calculator';
 import Notepad from './src/desktop/Notepad';
@@ -53,6 +52,7 @@ import {
   GOOGLE_APPS,
   MICROSOFT_APPS,
   openPlayStoreSearch,
+  openUrl,
 } from './src/desktop/storeLinks';
 
 const TOUR_KEY = '@nsos_tour_done';
@@ -123,9 +123,6 @@ const mveHasKey = async (): Promise<boolean> => {
 };
 
 // ── Classic desktop icons ──
-// The shipped/classic set, in the old-school desktop order: Internet top-left,
-// Recycle Bin beside it, then the tools/utilities, Settings, and the Google /
-// Microsoft folders — shell folders and brand shortcuts after. All permanent.
 interface ClassicIconSpec {
   id: string;
   label: string;
@@ -139,22 +136,27 @@ interface ClassicIconSpec {
 }
 
 const ICONS = {
-  folder: require('./src/assets/icons/folder.png'),
-  calculator: require('./src/assets/icons/calculator.png'),
+  internet: require('./src/assets/icons/internet.png'),
+  recycle: require('./src/assets/icons/recycle.png'),
+  cmd: require('./src/assets/icons/cmd.png'),
+  settings: require('./src/assets/icons/settings.png'),
+  googleFolder: require('./src/assets/icons/google-folder.png'),
+  microsoftFolder: require('./src/assets/icons/microsoft-folder.png'),
 };
 
 const ROBOT_PAINT_KEY = '@nsos_robot_paint';
 
-// Only the main shell icons, in a left column (Internet at the top). Google and
-// Microsoft are folders of app shortcuts. Phone/Messages/Camera live on the
-// taskbar, not here.
+// The final desktop set, one column down the far left: globe (Internet —
+// opens whatever browser the user has set as their Android default), Recycle
+// Bin, cmd, Settings, and the Google / Microsoft app folders. Calculator and
+// Notepad windows stay reachable from the Start menu.
 const CLASSIC_ICONS: ClassicIconSpec[] = [
-  { id: 'internet', label: 'Internet', icon: '🌐' },
-  { id: 'recycle-bin', label: 'Recycle Bin', icon: '🗑️' },
-  { id: 'calculator', label: 'Calculator', icon: '🧮', image: ICONS.calculator },
-  { id: 'notepad', label: 'Notepad', icon: '📝' },
-  { id: 'google', label: 'Google', icon: '📂', image: ICONS.folder },
-  { id: 'microsoft', label: 'Microsoft', icon: '🪟', image: ICONS.folder },
+  { id: 'internet', label: 'Internet', icon: '🌐', image: ICONS.internet },
+  { id: 'recycle-bin', label: 'Recycle Bin', icon: '🗑️', image: ICONS.recycle },
+  { id: 'cmd', label: 'cmd', icon: '＞_', image: ICONS.cmd },
+  { id: 'settings', label: 'Settings', icon: '⚙️', image: ICONS.settings },
+  { id: 'google', label: 'Google', icon: '📂', image: ICONS.googleFolder },
+  { id: 'microsoft', label: 'Microsoft', icon: '🪟', image: ICONS.microsoftFolder },
 ];
 
 const ClassicIcon: React.FC<{
@@ -242,7 +244,6 @@ const App: React.FC = () => {
 
   // ── Classic shell: windows, browser picker, live theme ──
   const [openWindows, setOpenWindows] = useState<string[]>([]);
-  const [browserPickerOpen, setBrowserPickerOpen] = useState(false);
   // Persistent floating chat: closed until first summon, then min/half/full.
   const [chatOpen, setChatOpen] = useState(false);
   const [chatSize, setChatSize] = useState<ChatSize>('half');
@@ -386,7 +387,9 @@ const App: React.FC = () => {
     (spec: ClassicIconSpec) => {
       switch (spec.id) {
         case 'internet':
-          setBrowserPickerOpen(true);
+          // Universal: Android routes this to whatever browser the user has
+          // set as their default.
+          openUrl('https://www.google.com');
           return;
         case 'recycle-bin':
           setRecycleOpen(true);
@@ -852,6 +855,14 @@ const App: React.FC = () => {
           setStartOpen(false);
           openWindow('cmd');
         }}
+        onOpenCalculator={() => {
+          setStartOpen(false);
+          openWindow('Calculator');
+        }}
+        onOpenNotepad={() => {
+          setStartOpen(false);
+          openWindow('Notepad');
+        }}
       />
 
       <SystemFlyout
@@ -919,12 +930,6 @@ const App: React.FC = () => {
           <MveSettingsScreen onClose={() => setMveSettingsOpen(false)} />
         </View>
       </Modal>
-
-      {/* Browser picker (the Internet classic icon). */}
-      <BrowserPicker
-        visible={browserPickerOpen}
-        onClose={() => setBrowserPickerOpen(false)}
-      />
 
       <ContextMenu
         visible={menu != null}
