@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 
 const ROBOT = require('../assets/icons/robot.png');
+const ROBOT_HEAD = require('../assets/icons/robot-head.png');
 
 export interface RobotPaint {
   id: string;
@@ -36,19 +37,21 @@ export const ROBOT_PAINTS: RobotPaint[] = [
   { id: 'frost', name: 'Arctic Frost', color: '#9fd4f5' },
 ];
 
-export const RobotSprite: React.FC<{ size: number; tint: string | null }> = ({
-  size,
-  tint,
-}) => (
+export const RobotSprite: React.FC<{
+  size: number;
+  tint: string | null;
+  /** Head-only crop — reads clearly at taskbar sizes. */
+  head?: boolean;
+}> = ({ size, tint, head }) => (
   <View style={{ width: size, height: size }}>
     <Image
-      source={ROBOT}
+      source={head ? ROBOT_HEAD : ROBOT}
       style={{ width: size, height: size }}
       resizeMode="contain"
     />
     {tint && (
       <Image
-        source={ROBOT}
+        source={head ? ROBOT_HEAD : ROBOT}
         style={[
           styles.tintWash,
           { width: size, height: size, tintColor: tint },

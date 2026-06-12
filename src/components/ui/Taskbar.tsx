@@ -134,7 +134,7 @@ export const Taskbar: React.FC<Props> = ({
           pressed && styles.pinPressed,
         ]}
       >
-        <RobotSprite size={36} tint={robotTint} />
+        <RobotSprite size={38} tint={robotTint} head />
         {intentCount > 0 && (
           <View style={styles.mveBadge}>
             <Text style={styles.mveBadgeText}>
