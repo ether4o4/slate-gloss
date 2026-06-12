@@ -106,7 +106,7 @@ const STATUS_BAR = StatusBar.currentHeight ?? 0;
 const TASKBAR_H = 64;
 const CELL_W = 84;
 const CELL_H = 96;
-const CLASSIC_COL_W = 176;
+const CLASSIC_COL_W = 88;
 const SCREEN_W = Dimensions.get('window').width;
 
 /** True when any MVE provider instance has an API key configured. */
@@ -740,7 +740,6 @@ const App: React.FC = () => {
               apps={appsByPkg}
               icons={state.desktop}
               widgets={state.desktopWidgets}
-              recycleCount={state.recycle.length}
               cellWidth={CELL_W}
               cellHeight={CELL_H}
               cols={grid.cols}
@@ -750,8 +749,6 @@ const App: React.FC = () => {
               onMoveIcon={(pkg, col, row) =>
                 update(s => moveDesktopIcon(s, pkg, col, row))
               }
-              onRecycle={pkg => update(s => recycleDesktopIcon(s, pkg))}
-              onOpenRecycle={() => setRecycleOpen(true)}
               onMoveWidget={moveWidget}
               onRemoveWidget={removeWidget}
               onEmptyMenu={emptyDesktopMenu}
@@ -985,9 +982,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingLeft: 6,
     gap: 14,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignContent: 'flex-start',
+    alignItems: 'center',
   },
   classicIcon: { width: 78, alignItems: 'center', gap: 3 },
   classicBox: {
