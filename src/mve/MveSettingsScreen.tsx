@@ -33,9 +33,10 @@ import {
 } from './MveBridge';
 
 const MveSettingsScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  // Services + keys
+  // Services + keys + model overrides
   const [services, setServices] = useState<ServiceInstance[]>([]);
   const [keys, setKeys] = useState<Record<string, string>>({});
+  const [models, setModels] = useState<Record<string, string>>({});
 
   // Core
   const [sandbox, setSandbox] = useState(false);
@@ -183,10 +184,21 @@ const MveSettingsScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <ScrollView contentContainerStyle={styles.content}>
         {/* ── Services ── */}
         <Section label="Providers">
+          <Text style={styles.hint}>
+            Enable any you have keys for — MVE falls back down the list when
+            one fails. Free needs no key.
+          </Text>
           {services.map(s => (
             <View key={s.instanceId} style={styles.card}>
               <View style={styles.rowBetween}>
-                <Text style={styles.cardTitle}>{s.displayName}</Text>
+                <View style={styles.flex}>
+                  <Text style={styles.cardTitle}>{s.displayName}</Text>
+                  {!!s.apiKeyUrl && (
+                    <Text style={styles.hint} numberOfLines={1}>
+                      keys: {s.apiKeyUrl.replace('https://', '')}
+                    </Text>
+                  )}
+                </View>
                 <Switch
                   value={s.enabled}
                   onValueChange={async v => {
@@ -199,16 +211,33 @@ const MveSettingsScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   }}
                 />
               </View>
+              {!s.keyless && (
+                <TextInput
+                  style={styles.input}
+                  value={keys[s.instanceId] ?? ''}
+                  onChangeText={t => setKeys(k => ({ ...k, [s.instanceId]: t }))}
+                  onEndEditing={() =>
+                    MveBridge.setApiKey(s.instanceId, keys[s.instanceId] ?? '')
+                  }
+                  placeholder="API key"
+                  placeholderTextColor="#7d97b5"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              )}
               <TextInput
                 style={styles.input}
-                value={keys[s.instanceId] ?? ''}
-                onChangeText={t => setKeys(k => ({ ...k, [s.instanceId]: t }))}
+                value={models[s.instanceId] ?? s.model ?? ''}
+                onChangeText={t => setModels(m => ({ ...m, [s.instanceId]: t }))}
                 onEndEditing={() =>
-                  MveBridge.setApiKey(s.instanceId, keys[s.instanceId] ?? '')
+                  MveBridge.setServiceModel(
+                    s.instanceId,
+                    models[s.instanceId] ?? '',
+                  )
                 }
-                placeholder="API key"
+                placeholder="Model (blank = default)"
                 placeholderTextColor="#7d97b5"
-                secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
               />

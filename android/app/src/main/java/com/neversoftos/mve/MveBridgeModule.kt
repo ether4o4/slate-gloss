@@ -49,21 +49,61 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
 
   // ---- Providers -----------------------------------------------------------
 
+  /** API wire format. Most services are OpenAI-compatible; two are native. */
+  private enum class ApiFormat { OPENAI, GEMINI, ANTHROPIC }
+
   private data class ProviderDef(
       val id: String,
       val displayName: String,
-      val baseUrl: String,
+      /** Full chat endpoint (OpenAI/Anthropic) or generativelanguage base (Gemini). */
+      val chatUrl: String,
       val model: String,
+      val format: ApiFormat = ApiFormat.OPENAI,
+      /** Echo reasoning_content back on tool turns (DeepSeek/Z.AI lineage). */
+      val echoReasoning: Boolean = false,
+      val apiKeyUrl: String = "",
+      /** This provider needs no key (the built-in Free tier). */
+      val keyless: Boolean = false,
   )
 
+  // The full MorsVitaEst provider roster (the on-device LiteRT tier is omitted —
+  // it needs the GGUF engine). OpenAI-compatible unless marked otherwise.
   private val providers = listOf(
-      ProviderDef("openrouter", "OpenRouter", "https://openrouter.ai/api/v1", "openrouter/auto"),
-      ProviderDef("deepseek", "DeepSeek", "https://api.deepseek.com/v1", "deepseek-chat"),
-      ProviderDef("openai", "OpenAI", "https://api.openai.com/v1", "gpt-4o-mini"),
+      ProviderDef("free", "Free", "https://api.morsvitaest.com/chat/completions", "expert", keyless = true),
+      ProviderDef("groqcloud", "GroqCloud", "https://api.groq.com/openai/v1/chat/completions", "llama-3.3-70b-versatile", apiKeyUrl = "https://console.groq.com/keys"),
+      ProviderDef("openrouter", "OpenRouter", "https://openrouter.ai/api/v1/chat/completions", "openrouter/auto", echoReasoning = true, apiKeyUrl = "https://openrouter.ai/keys"),
+      ProviderDef("openai", "OpenAI", "https://api.openai.com/v1/chat/completions", "gpt-4o-mini", apiKeyUrl = "https://platform.openai.com/api-keys"),
+      ProviderDef("anthropic", "Anthropic", "https://api.anthropic.com/v1/messages", "claude-3-5-sonnet-latest", ApiFormat.ANTHROPIC, apiKeyUrl = "https://console.anthropic.com/settings/keys"),
+      ProviderDef("gemini", "Gemini", "https://generativelanguage.googleapis.com/v1beta/models", "gemini-2.0-flash", ApiFormat.GEMINI, apiKeyUrl = "https://aistudio.google.com/apikey"),
+      ProviderDef("deepseek", "DeepSeek", "https://api.deepseek.com/chat/completions", "deepseek-chat", echoReasoning = true, apiKeyUrl = "https://platform.deepseek.com/api_keys"),
+      ProviderDef("xai", "xAI (Grok)", "https://api.x.ai/v1/chat/completions", "grok-2-latest", apiKeyUrl = "https://console.x.ai"),
+      ProviderDef("mistral", "Mistral", "https://api.mistral.ai/v1/chat/completions", "mistral-large-latest", apiKeyUrl = "https://console.mistral.ai/api-keys"),
+      ProviderDef("cerebras", "Cerebras", "https://api.cerebras.ai/v1/chat/completions", "llama-3.3-70b", apiKeyUrl = "https://cloud.cerebras.ai"),
+      ProviderDef("nvidia", "NVIDIA NIM", "https://integrate.api.nvidia.com/v1/chat/completions", "meta/llama-3.3-70b-instruct", apiKeyUrl = "https://build.nvidia.com"),
+      ProviderDef("together", "Together", "https://api.together.xyz/v1/chat/completions", "meta-llama/Llama-3.3-70B-Instruct-Turbo", apiKeyUrl = "https://api.together.ai/settings/api-keys"),
+      ProviderDef("fireworksai", "Fireworks", "https://api.fireworks.ai/inference/v1/chat/completions", "accounts/fireworks/models/llama-v3p3-70b-instruct", echoReasoning = true, apiKeyUrl = "https://fireworks.ai/api-keys"),
+      ProviderDef("deepinfra", "DeepInfra", "https://api.deepinfra.com/v1/openai/chat/completions", "meta-llama/Llama-3.3-70B-Instruct", apiKeyUrl = "https://deepinfra.com/dash/api_keys"),
+      ProviderDef("huggingface", "HuggingFace", "https://router.huggingface.co/v1/chat/completions", "meta-llama/Llama-3.3-70B-Instruct", apiKeyUrl = "https://huggingface.co/settings/tokens"),
+      ProviderDef("ollamacloud", "Ollama Cloud", "https://ollama.com/v1/chat/completions", "gpt-oss:120b", apiKeyUrl = "https://ollama.com/settings/keys"),
+      ProviderDef("moonshot", "Moonshot (Kimi)", "https://api.moonshot.cn/v1/chat/completions", "moonshot-v1-8k", echoReasoning = true, apiKeyUrl = "https://platform.moonshot.cn/console/api-keys"),
+      ProviderDef("zai", "Z.AI", "https://api.z.ai/api/paas/v4/chat/completions", "glm-4.6", echoReasoning = true, apiKeyUrl = "https://z.ai/manage-apikey/apikey-list"),
+      ProviderDef("zai-coding-plan", "Z.AI Coding", "https://api.z.ai/api/coding/paas/v4/chat/completions", "glm-4.6", echoReasoning = true, apiKeyUrl = "https://z.ai/manage-apikey/apikey-list"),
+      ProviderDef("minimax", "MiniMax", "https://api.minimax.io/v1/chat/completions", "MiniMax-Text-01", echoReasoning = true, apiKeyUrl = "https://www.minimax.io/platform"),
+      ProviderDef("longcat", "LongCat", "https://api.longcat.chat/openai/v1/chat/completions", "LongCat-Flash-Lite", echoReasoning = true),
+      ProviderDef("venice", "Venice", "https://api.venice.ai/api/v1/chat/completions", "llama-3.3-70b", echoReasoning = true, apiKeyUrl = "https://venice.ai/settings/api"),
+      ProviderDef("aihubmix", "AiHubMix", "https://aihubmix.com/v1/chat/completions", "gpt-4o-mini", apiKeyUrl = "https://aihubmix.com"),
+      ProviderDef("opencode", "OpenCode Zen", "https://opencode.ai/zen/v1/chat/completions", "claude-3-5-sonnet-latest", echoReasoning = true, apiKeyUrl = "https://opencode.ai/auth"),
+      ProviderDef("publicai", "PublicAI", "https://api.publicai.co/v1/chat/completions", "apertus-70b-instruct", apiKeyUrl = "https://platform.publicai.co"),
   )
+
+  private fun providerById(id: String): ProviderDef? = providers.firstOrNull { it.id == id }
 
   private fun keyOf(id: String): String = prefs.getString("key_$id", "") ?: ""
   private fun enabledOf(id: String): Boolean = prefs.getBoolean("enabled_$id", false)
+
+  /** Enabled providers with a usable key (or keyless), in catalog order. */
+  private fun enabledProviders(): List<ProviderDef> =
+      providers.filter { enabledOf(it.id) && (it.keyless || keyOf(it.id).isNotBlank()) }
 
   @ReactMethod
   fun services(promise: Promise) = io.execute {
@@ -75,6 +115,9 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
         m.putString("serviceId", p.id)
         m.putString("displayName", p.displayName)
         m.putBoolean("enabled", enabledOf(p.id))
+        m.putBoolean("keyless", p.keyless)
+        m.putString("apiKeyUrl", p.apiKeyUrl)
+        m.putString("model", prefs.getString("model_${p.id}", "")?.ifBlank { p.model } ?: p.model)
         arr.pushMap(m)
       }
       promise.resolve(arr)
@@ -100,13 +143,19 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
     promise.resolve(null)
   }
 
+  @ReactMethod
+  fun setServiceModel(instanceId: String, model: String, promise: Promise) = io.execute {
+    prefs.edit().putString("model_$instanceId", model).apply()
+    promise.resolve(null)
+  }
+
   // ---- Chat ----------------------------------------------------------------
 
   @ReactMethod
   fun sendMessage(text: String, promise: Promise) = io.execute {
     history.add("user" to text)
-    val provider = providers.firstOrNull { enabledOf(it.id) && keyOf(it.id).isNotBlank() }
-    if (provider == null) {
+    val chain = enabledProviders()
+    if (chain.isEmpty()) {
       val msg =
           "No provider is enabled yet. Open MVE → Settings, add an API key and enable a provider."
       history.add("assistant" to msg)
@@ -115,7 +164,7 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
     }
     val reply =
         try {
-          runAgentLoop(provider)
+          runAgentLoop(chain)
         } catch (e: Exception) {
           "Request failed: ${e.message}"
         }
@@ -212,6 +261,7 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
   private val maxAgentSteps = 6
 
   private val runLineRe = Regex("(?m)^\\s*RUN:\\s?(.+)$")
+  private val mcpLineRe = Regex("(?m)^\\s*MCP:\\s?(.+)$")
 
   /**
    * Agentic loop: ask the model, run any "RUN:" commands it emits in the
@@ -219,7 +269,7 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
    * answer with no commands (or we hit the step cap). Returns a transcript of
    * the reasoning, the commands, their output, and the final report.
    */
-  private fun runAgentLoop(provider: ProviderDef): String {
+  private fun runAgentLoop(chain: List<ProviderDef>): String {
     // Budget kill switch / daily cap.
     if (prefs.getBoolean("autonomy_paused", false)) {
       return "MVE is paused (autonomy kill switch is on — turn it off in MVE Settings → Budget)."
@@ -231,10 +281,22 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
 
     // System prompt = base directive + the user's Soul + learned memories.
     val soul = prefs.getString("soul", "")?.trim().orEmpty()
+    val mcpTools = listMcpTools()
     val fullSystem = buildString {
       append(systemPrompt)
       if (soul.isNotEmpty()) append("\n\n## Owner directive (Soul)\n").append(soul)
       append(memoriesBlock())
+      if (mcpTools.isNotEmpty()) {
+        append("\n\n## External tools (MCP)\n")
+        append("You can call these external tools. To call one, emit a line of the form\n")
+        append("MCP: <server> <tool> <json-arguments>\n")
+        append("exactly like RUN: lines - then STOP and wait for the real result.\n")
+        mcpTools.forEach { (server, tool, desc) ->
+          append("- ").append(server).append(' ').append(tool)
+          if (desc.isNotEmpty()) append(": ").append(desc.take(140))
+          append('\n')
+        }
+      }
     }
     // Per-user step cap.
     val steps = prefs.getInt("max_steps", maxAgentSteps)
@@ -248,14 +310,16 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
 
     val transcript = StringBuilder()
     for (step in 0 until steps) {
-      val reply = chatCompletion(provider, messages)
+      val reply = askChain(chain, messages)
       val commands = runLineRe.findAll(reply).map { it.groupValues[1].trim() }
           .filter { it.isNotEmpty() }.toList()
+      val mcpCalls = mcpLineRe.findAll(reply).map { it.groupValues[1].trim() }
+          .filter { it.isNotEmpty() }.toList()
 
-      // Text the model wrote above its RUN: lines (its reasoning this step).
-      val prose = reply.replace(runLineRe, "").trim()
+      // Text the model wrote above its RUN:/MCP: lines (its reasoning this step).
+      val prose = reply.replace(runLineRe, "").replace(mcpLineRe, "").trim()
 
-      if (commands.isEmpty()) {
+      if (commands.isEmpty() && mcpCalls.isEmpty()) {
         // Final answer.
         if (transcript.isEmpty()) return reply
         if (prose.isNotEmpty()) transcript.append(prose)
@@ -267,7 +331,8 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
 
       if (prose.isNotEmpty()) transcript.append(prose).append("\n\n")
 
-      val observation = StringBuilder("SHELL OUTPUT:\n")
+      val observation = StringBuilder()
+      if (commands.isNotEmpty()) observation.append("SHELL OUTPUT:\n")
       for (cmd in commands) {
         transcript.append("$ ").append(cmd).append('\n')
         val out = runForAgent(cmd)
@@ -275,6 +340,13 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
         transcript.append('\n')
         observation.append("$ ").append(cmd).append('\n')
             .append(out.ifEmpty { "(no output)" }).append("\n\n")
+      }
+      if (mcpCalls.isNotEmpty()) observation.append("MCP RESULTS:\n")
+      for (call in mcpCalls) {
+        transcript.append("MCP ").append(call.take(80)).append('\n')
+        val out = runMcpCall(call).take(4000)
+        transcript.append(out).append("\n\n")
+        observation.append(call.take(120)).append("\n").append(out).append("\n\n")
       }
       // Feed the real output back as the next turn's input.
       messages.put(JSONObject().put("role", "user").put("content", observation.toString().trim()))
@@ -300,37 +372,249 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
     }
   }
 
+  /**
+   * Ask the enabled providers in catalog order, falling back through the chain
+   * on any transport or HTTP error - the MorsVitaEst behavior. Only a provider
+   * that answers ends the chain; content-level refusals are not retried.
+   */
+  private fun askChain(chain: List<ProviderDef>, messages: JSONArray): String {
+    var lastError = "No provider available."
+    for (p in chain) {
+      try {
+        return chatCompletion(p, messages)
+      } catch (e: Exception) {
+        lastError = "${p.displayName}: ${e.message}"
+      }
+    }
+    return "All providers failed. Last error - $lastError"
+  }
+
+  /** One completion against one provider; throws to trigger chain fallback. */
   private fun chatCompletion(provider: ProviderDef, messages: JSONArray): String {
-    val url = URL(provider.baseUrl.trimEnd('/') + "/chat/completions")
-    val conn = (url.openConnection() as HttpURLConnection).apply {
+    val model = prefs.getString("model_${provider.id}", "")?.ifBlank { provider.model }
+        ?: provider.model
+    val temperature = prefs.getFloat("temperature", 0.7f).toDouble()
+    return when (provider.format) {
+      ApiFormat.OPENAI -> openAiCompletion(provider, model, temperature, messages)
+      ApiFormat.ANTHROPIC -> anthropicCompletion(provider, model, temperature, messages)
+      ApiFormat.GEMINI -> geminiCompletion(provider, model, temperature, messages)
+    }
+  }
+
+  private fun post(
+      url: String,
+      headers: Map<String, String>,
+      body: JSONObject,
+  ): JSONObject {
+    val conn = (URL(url).openConnection() as HttpURLConnection).apply {
       requestMethod = "POST"
       connectTimeout = 20000
-      readTimeout = 60000
+      readTimeout = 90000
       doOutput = true
       setRequestProperty("Content-Type", "application/json")
-      setRequestProperty("Authorization", "Bearer ${keyOf(provider.id)}")
-    }
-    val modelOverride = prefs.getString("model_${provider.id}", "")?.takeIf { it.isNotBlank() }
-    val body = JSONObject().apply {
-      put("model", modelOverride ?: provider.model)
-      put("messages", messages)
-      put("temperature", prefs.getFloat("temperature", 0.7f).toDouble())
+      headers.forEach { (k, v) -> setRequestProperty(k, v) }
     }
     OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(body.toString()) }
-
     val code = conn.responseCode
     val stream = if (code in 200..299) conn.inputStream else conn.errorStream
     val resp = stream?.bufferedReader()?.use { it.readText() } ?: ""
-    if (code !in 200..299) return "Provider error $code: ${resp.take(300)}"
+    if (code !in 200..299) throw RuntimeException("HTTP $code: ${resp.take(220)}")
+    return JSONObject(resp)
+  }
 
-    val parsed = JSONObject(resp)
-    parsed.optJSONObject("usage")?.optInt("total_tokens", 0)?.let { if (it > 0) recordTokens(it) }
-    val content = parsed
-        .optJSONArray("choices")
+  private fun openAiCompletion(
+      p: ProviderDef,
+      model: String,
+      temperature: Double,
+      messages: JSONArray,
+  ): String {
+    val headers = if (p.keyless) emptyMap()
+    else mapOf("Authorization" to "Bearer ${keyOf(p.id)}")
+    val parsed = post(p.chatUrl, headers, JSONObject().apply {
+      put("model", model)
+      put("messages", messages)
+      put("temperature", temperature)
+    })
+    parsed.optJSONObject("usage")?.optInt("total_tokens", 0)
+        ?.let { if (it > 0) recordTokens(it) }
+    val content = parsed.optJSONArray("choices")
         ?.optJSONObject(0)
         ?.optJSONObject("message")
         ?.optString("content")
-    return content?.takeIf { it.isNotEmpty() } ?: "No content in provider response."
+    return content?.takeIf { it.isNotEmpty() }
+        ?: throw RuntimeException("empty response")
+  }
+
+  private fun anthropicCompletion(
+      p: ProviderDef,
+      model: String,
+      temperature: Double,
+      messages: JSONArray,
+  ): String {
+    // Anthropic takes the system prompt as a top-level field.
+    var system = ""
+    val turns = JSONArray()
+    for (i in 0 until messages.length()) {
+      val m = messages.getJSONObject(i)
+      if (m.optString("role") == "system") system = m.optString("content")
+      else turns.put(m)
+    }
+    val parsed = post(p.chatUrl, mapOf(
+        "x-api-key" to keyOf(p.id),
+        "anthropic-version" to "2023-06-01",
+    ), JSONObject().apply {
+      put("model", model)
+      put("max_tokens", 4096)
+      if (system.isNotEmpty()) put("system", system)
+      put("messages", turns)
+      put("temperature", temperature)
+    })
+    parsed.optJSONObject("usage")?.let {
+      val total = it.optInt("input_tokens", 0) + it.optInt("output_tokens", 0)
+      if (total > 0) recordTokens(total)
+    }
+    val sb = StringBuilder()
+    val content = parsed.optJSONArray("content")
+    if (content != null) {
+      for (i in 0 until content.length()) {
+        val block = content.getJSONObject(i)
+        if (block.optString("type") == "text") sb.append(block.optString("text"))
+      }
+    }
+    return sb.toString().takeIf { it.isNotEmpty() }
+        ?: throw RuntimeException("empty response")
+  }
+
+  private fun geminiCompletion(
+      p: ProviderDef,
+      model: String,
+      temperature: Double,
+      messages: JSONArray,
+  ): String {
+    var system = ""
+    val contents = JSONArray()
+    for (i in 0 until messages.length()) {
+      val m = messages.getJSONObject(i)
+      val role = m.optString("role")
+      val text = m.optString("content")
+      if (role == "system") { system = text; continue }
+      contents.put(JSONObject().apply {
+        put("role", if (role == "assistant") "model" else "user")
+        put("parts", JSONArray().put(JSONObject().put("text", text)))
+      })
+    }
+    val url = "${p.chatUrl.trimEnd('/')}/$model:generateContent?key=${keyOf(p.id)}"
+    val parsed = post(url, emptyMap(), JSONObject().apply {
+      if (system.isNotEmpty()) {
+        put("system_instruction",
+            JSONObject().put("parts", JSONArray().put(JSONObject().put("text", system))))
+      }
+      put("contents", contents)
+      put("generationConfig", JSONObject().put("temperature", temperature))
+    })
+    parsed.optJSONObject("usageMetadata")?.optInt("totalTokenCount", 0)
+        ?.let { if (it > 0) recordTokens(it) }
+    val parts = parsed.optJSONArray("candidates")
+        ?.optJSONObject(0)
+        ?.optJSONObject("content")
+        ?.optJSONArray("parts")
+    val sb = StringBuilder()
+    if (parts != null) {
+      for (i in 0 until parts.length()) sb.append(parts.getJSONObject(i).optString("text"))
+    }
+    return sb.toString().takeIf { it.isNotEmpty() }
+        ?: throw RuntimeException("empty response")
+  }
+
+  // ---- MCP client (Streamable HTTP, stateless JSON-RPC) ---------------------
+
+  private fun mcpRpc(url: String, method: String, params: JSONObject?): JSONObject {
+    val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+      requestMethod = "POST"
+      connectTimeout = 10000
+      readTimeout = 30000
+      doOutput = true
+      setRequestProperty("Content-Type", "application/json")
+      setRequestProperty("Accept", "application/json, text/event-stream")
+    }
+    val req = JSONObject().apply {
+      put("jsonrpc", "2.0")
+      put("id", 1)
+      put("method", method)
+      if (params != null) put("params", params)
+    }
+    OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(req.toString()) }
+    val code = conn.responseCode
+    val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+    var resp = stream?.bufferedReader()?.use { it.readText() } ?: ""
+    if (code !in 200..299) throw RuntimeException("HTTP $code: ${resp.take(180)}")
+    // Streamable HTTP may answer as SSE; pull the JSON out of data: lines.
+    if (resp.startsWith("event:") || resp.startsWith("data:")) {
+      resp = resp.lines().filter { it.startsWith("data:") }
+          .joinToString("") { it.removePrefix("data:").trim() }
+    }
+    val o = JSONObject(resp)
+    o.optJSONObject("error")?.let { throw RuntimeException(it.optString("message")) }
+    return o.optJSONObject("result") ?: JSONObject()
+  }
+
+  /** (server, tool, description) across all enabled MCP servers; errors skipped. */
+  private fun listMcpTools(): List<Triple<String, String, String>> {
+    val out = mutableListOf<Triple<String, String, String>>()
+    val list = mcpArray()
+    for (i in 0 until list.length()) {
+      val srv = list.getJSONObject(i)
+      if (!srv.optBoolean("enabled", true)) continue
+      val name = srv.optString("name")
+      try {
+        val tools = mcpRpc(srv.optString("url"), "tools/list", null).optJSONArray("tools")
+        if (tools != null) {
+          for (j in 0 until tools.length()) {
+            val t = tools.getJSONObject(j)
+            out.add(Triple(name, t.optString("name"), t.optString("description")))
+          }
+        }
+      } catch (_: Exception) {
+        // Unreachable server: simply not offered to the model this turn.
+      }
+    }
+    return out
+  }
+
+  /** Execute "MCP: <server> <tool> <json-args>" emitted by the model. */
+  private fun runMcpCall(call: String): String {
+    return try {
+      val parts = call.split(Regex("\\s+"), limit = 3)
+      if (parts.size < 2) return "error: expected MCP: <server> <tool> <json-args>"
+      val serverName = parts[0]
+      val toolName = parts[1]
+      val args = if (parts.size == 3 && parts[2].isNotBlank()) JSONObject(parts[2])
+      else JSONObject()
+      val list = mcpArray()
+      var url: String? = null
+      for (i in 0 until list.length()) {
+        val srv = list.getJSONObject(i)
+        if (srv.optString("name") == serverName && srv.optBoolean("enabled", true)) {
+          url = srv.optString("url"); break
+        }
+      }
+      if (url == null) return "error: no enabled MCP server named '$serverName'"
+      val result = mcpRpc(url, "tools/call", JSONObject().apply {
+        put("name", toolName)
+        put("arguments", args)
+      })
+      val content = result.optJSONArray("content")
+      if (content != null) {
+        val sb = StringBuilder()
+        for (i in 0 until content.length()) {
+          val block = content.getJSONObject(i)
+          if (block.optString("type") == "text") sb.append(block.optString("text")).append('\n')
+        }
+        sb.toString().trim().ifEmpty { result.toString() }
+      } else result.toString()
+    } catch (e: Exception) {
+      "error: ${e.message}"
+    }
   }
 
   @ReactMethod

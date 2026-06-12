@@ -25,6 +25,12 @@ export interface ServiceInstance {
   serviceId: string;
   displayName: string;
   enabled: boolean;
+  /** Provider needs no API key (the built-in Free tier). */
+  keyless?: boolean;
+  /** Where to get a key for this provider. */
+  apiKeyUrl?: string;
+  /** Active model id (override or provider default). */
+  model?: string;
 }
 
 export interface SandboxFileEntry {
@@ -91,6 +97,7 @@ export interface MveBridgeApi {
   getApiKey(instanceId: string): Promise<string>;
   setApiKey(instanceId: string, apiKey: string): Promise<void>;
   setServiceEnabled(instanceId: string, enabled: boolean): Promise<void>;
+  setServiceModel(instanceId: string, model: string): Promise<void>;
 
   // Core toggles
   isSandboxEnabled(): Promise<boolean>;
@@ -228,6 +235,7 @@ function createMockBridge(): MveBridgeApi {
     getApiKey: () => delay(''),
     setApiKey: async () => {},
     setServiceEnabled: async () => {},
+    setServiceModel: async () => {},
 
     isSandboxEnabled: () => delay(sandboxEnabled),
     setSandboxEnabled: async enabled => {
