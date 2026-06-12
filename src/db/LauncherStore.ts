@@ -246,6 +246,18 @@ export const removeDesktopWidget = (
   desktopWidgets: state.desktopWidgets.filter(w => w.widgetId !== widgetId),
 });
 
+export const resizeDesktopWidget = (
+  state: LauncherState,
+  widgetId: number,
+  w: number,
+  h: number,
+): LauncherState => ({
+  ...state,
+  desktopWidgets: state.desktopWidgets.map(x =>
+    x.widgetId === widgetId ? { ...x, w, h } : x,
+  ),
+});
+
 export const moveDesktopWidget = (
   state: LauncherState,
   widgetId: number,

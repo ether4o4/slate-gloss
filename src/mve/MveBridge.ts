@@ -47,6 +47,38 @@ export interface ValidationResult {
   output: string;
 }
 
+export interface HeartbeatConfig {
+  intervalMinutes: number;
+  activeStartHour: number;
+  activeEndHour: number;
+}
+
+export interface Generation {
+  temperature: number;
+  showReasoning: boolean;
+  maxAgentSteps: number;
+}
+
+export interface Budget {
+  dailyTokenCap: number;
+  tokensUsedToday: number;
+  autonomyPaused: boolean;
+}
+
+export interface Memory {
+  id: string;
+  key: string;
+  content: string;
+  category: string;
+}
+
+export interface McpServer {
+  id: string;
+  name: string;
+  url: string;
+  enabled: boolean;
+}
+
 export interface MveBridgeApi {
   // Chat
   sendMessage(text: string): Promise<string>;
@@ -65,6 +97,46 @@ export interface MveBridgeApi {
   setSandboxEnabled(enabled: boolean): Promise<void>;
   isDaemonEnabled(): Promise<boolean>;
   setDaemonEnabled(enabled: boolean): Promise<void>;
+
+  // Heartbeat
+  isHeartbeatEnabled(): Promise<boolean>;
+  setHeartbeatEnabled(enabled: boolean): Promise<void>;
+  getHeartbeatConfig(): Promise<HeartbeatConfig>;
+  setHeartbeatConfig(
+    intervalMinutes: number,
+    startHour: number,
+    endHour: number,
+  ): Promise<void>;
+
+  // Soul (custom system prompt)
+  getSoul(): Promise<string>;
+  setSoul(text: string): Promise<void>;
+
+  // Generation params
+  getGeneration(): Promise<Generation>;
+  setGeneration(
+    temperature: number,
+    showReasoning: boolean,
+    maxAgentSteps: number,
+  ): Promise<void>;
+
+  // Budget
+  getBudget(): Promise<Budget>;
+  setBudget(dailyTokenCap: number, autonomyPaused: boolean): Promise<void>;
+
+  // Memories
+  getMemories(): Promise<Memory[]>;
+  addMemory(key: string, content: string, category: string): Promise<void>;
+  deleteMemory(id: string): Promise<void>;
+
+  // MCP servers
+  getMcpServers(): Promise<McpServer[]>;
+  addMcpServer(name: string, url: string): Promise<void>;
+  deleteMcpServer(id: string): Promise<void>;
+
+  // Settings export / import
+  exportSettings(): Promise<string>;
+  importSettings(json: string): Promise<void>;
 
   // Sandbox: terminal + files
   sandboxStatus(): Promise<SandboxStatus>;
@@ -95,6 +167,25 @@ function createMockBridge(): MveBridgeApi {
   const history: ChatMessage[] = [];
   let sandboxEnabled = true;
   let daemonEnabled = false;
+  let heartbeatEnabled = false;
+  let heartbeat: HeartbeatConfig = {
+    intervalMinutes: 60,
+    activeStartHour: 8,
+    activeEndHour: 22,
+  };
+  let soul = '';
+  let generation: Generation = {
+    temperature: 0.7,
+    showReasoning: false,
+    maxAgentSteps: 6,
+  };
+  let budget: Budget = {
+    dailyTokenCap: 0,
+    tokensUsedToday: 0,
+    autonomyPaused: false,
+  };
+  let memories: Memory[] = [];
+  let mcpServers: McpServer[] = [];
   const files: Record<string, string> = {
     '/root/notes.txt': 'MVE engine not linked — this is mock sandbox data.\n',
   };
@@ -146,6 +237,60 @@ function createMockBridge(): MveBridgeApi {
     setDaemonEnabled: async enabled => {
       daemonEnabled = enabled;
     },
+
+    isHeartbeatEnabled: () => delay(heartbeatEnabled),
+    setHeartbeatEnabled: async enabled => {
+      heartbeatEnabled = enabled;
+    },
+    getHeartbeatConfig: () => delay({ ...heartbeat }),
+    setHeartbeatConfig: async (intervalMinutes, startHour, endHour) => {
+      heartbeat = {
+        intervalMinutes,
+        activeStartHour: startHour,
+        activeEndHour: endHour,
+      };
+    },
+
+    getSoul: () => delay(soul),
+    setSoul: async text => {
+      soul = text;
+    },
+
+    getGeneration: () => delay({ ...generation }),
+    setGeneration: async (temperature, showReasoning, maxAgentSteps) => {
+      generation = { temperature, showReasoning, maxAgentSteps };
+    },
+
+    getBudget: () => delay({ ...budget }),
+    setBudget: async (dailyTokenCap, autonomyPaused) => {
+      budget = { ...budget, dailyTokenCap, autonomyPaused };
+    },
+
+    getMemories: () => delay([...memories]),
+    addMemory: async (key, content, category) => {
+      memories.push({ id: String(Date.now()), key, content, category });
+    },
+    deleteMemory: async id => {
+      memories = memories.filter(m => m.id !== id);
+    },
+
+    getMcpServers: () => delay([...mcpServers]),
+    addMcpServer: async (name, url) => {
+      mcpServers.push({ id: String(Date.now()), name, url, enabled: true });
+    },
+    deleteMcpServer: async id => {
+      mcpServers = mcpServers.filter(m => m.id !== id);
+    },
+
+    exportSettings: () =>
+      delay(
+        JSON.stringify(
+          { soul, memories, mcpServers, heartbeat, generation, budget },
+          null,
+          2,
+        ),
+      ),
+    importSettings: async () => {},
 
     sandboxStatus: () =>
       delay({

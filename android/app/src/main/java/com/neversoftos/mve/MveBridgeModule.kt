@@ -220,15 +220,34 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
    * the reasoning, the commands, their output, and the final report.
    */
   private fun runAgentLoop(provider: ProviderDef): String {
+    // Budget kill switch / daily cap.
+    if (prefs.getBoolean("autonomy_paused", false)) {
+      return "MVE is paused (autonomy kill switch is on — turn it off in MVE Settings → Budget)."
+    }
+    val cap = prefs.getInt("budget_cap", 0)
+    if (cap > 0 && tokensUsedToday() >= cap) {
+      return "Daily token budget reached ($cap). Raise or clear the cap in MVE Settings → Budget."
+    }
+
+    // System prompt = base directive + the user's Soul + learned memories.
+    val soul = prefs.getString("soul", "")?.trim().orEmpty()
+    val fullSystem = buildString {
+      append(systemPrompt)
+      if (soul.isNotEmpty()) append("\n\n## Owner directive (Soul)\n").append(soul)
+      append(memoriesBlock())
+    }
+    // Per-user step cap.
+    val steps = prefs.getInt("max_steps", maxAgentSteps)
+
     // Working message list for this turn: system + prior history.
     val messages = JSONArray()
-    messages.put(JSONObject().put("role", "system").put("content", systemPrompt))
+    messages.put(JSONObject().put("role", "system").put("content", fullSystem))
     history.forEach { (role, content) ->
       messages.put(JSONObject().put("role", role).put("content", content))
     }
 
     val transcript = StringBuilder()
-    for (step in 0 until maxAgentSteps) {
+    for (step in 0 until steps) {
       val reply = chatCompletion(provider, messages)
       val commands = runLineRe.findAll(reply).map { it.groupValues[1].trim() }
           .filter { it.isNotEmpty() }.toList()
@@ -262,7 +281,7 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
     }
 
     transcript.append(
-        "\n[Reached the ${maxAgentSteps}-step limit. Tell me to continue if there's more to do.]",
+        "\n[Reached the ${steps}-step limit. Tell me to continue if there's more to do.]",
     )
     return transcript.toString().trim()
   }
@@ -291,9 +310,11 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
       setRequestProperty("Content-Type", "application/json")
       setRequestProperty("Authorization", "Bearer ${keyOf(provider.id)}")
     }
+    val modelOverride = prefs.getString("model_${provider.id}", "")?.takeIf { it.isNotBlank() }
     val body = JSONObject().apply {
-      put("model", provider.model)
+      put("model", modelOverride ?: provider.model)
       put("messages", messages)
+      put("temperature", prefs.getFloat("temperature", 0.7f).toDouble())
     }
     OutputStreamWriter(conn.outputStream, Charsets.UTF_8).use { it.write(body.toString()) }
 
@@ -302,7 +323,9 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
     val resp = stream?.bufferedReader()?.use { it.readText() } ?: ""
     if (code !in 200..299) return "Provider error $code: ${resp.take(300)}"
 
-    val content = JSONObject(resp)
+    val parsed = JSONObject(resp)
+    parsed.optJSONObject("usage")?.optInt("total_tokens", 0)?.let { if (it > 0) recordTokens(it) }
+    val content = parsed
         .optJSONArray("choices")
         ?.optJSONObject(0)
         ?.optJSONObject("message")
@@ -354,6 +377,269 @@ class MveBridgeModule(private val reactContext: ReactApplicationContext) :
   fun setDaemonEnabled(enabled: Boolean, promise: Promise) {
     prefs.edit().putBoolean("daemon_enabled", enabled).apply()
     promise.resolve(null)
+  }
+
+  // ---- Heartbeat -----------------------------------------------------------
+  // Periodic self-check. The interval/active-hours are stored and surfaced; the
+  // actual background trigger runs when the daemon foreground service is on.
+
+  @ReactMethod
+  fun isHeartbeatEnabled(promise: Promise) =
+      promise.resolve(prefs.getBoolean("hb_enabled", false))
+
+  @ReactMethod
+  fun setHeartbeatEnabled(enabled: Boolean, promise: Promise) {
+    prefs.edit().putBoolean("hb_enabled", enabled).apply()
+    promise.resolve(null)
+  }
+
+  @ReactMethod
+  fun getHeartbeatConfig(promise: Promise) = io.execute {
+    promise.resolve(Arguments.createMap().apply {
+      putInt("intervalMinutes", prefs.getInt("hb_interval", 60))
+      putInt("activeStartHour", prefs.getInt("hb_start", 8))
+      putInt("activeEndHour", prefs.getInt("hb_end", 22))
+    })
+  }
+
+  @ReactMethod
+  fun setHeartbeatConfig(intervalMinutes: Int, startHour: Int, endHour: Int, promise: Promise) {
+    prefs.edit()
+        .putInt("hb_interval", intervalMinutes.coerceIn(5, 1440))
+        .putInt("hb_start", startHour.coerceIn(0, 23))
+        .putInt("hb_end", endHour.coerceIn(0, 23))
+        .apply()
+    promise.resolve(null)
+  }
+
+  // ---- Soul (custom system prompt) -----------------------------------------
+
+  @ReactMethod
+  fun getSoul(promise: Promise) = io.execute {
+    promise.resolve(prefs.getString("soul", "") ?: "")
+  }
+
+  @ReactMethod
+  fun setSoul(text: String, promise: Promise) {
+    prefs.edit().putString("soul", text).apply()
+    promise.resolve(null)
+  }
+
+  // ---- Generation params ---------------------------------------------------
+
+  @ReactMethod
+  fun getGeneration(promise: Promise) = io.execute {
+    promise.resolve(Arguments.createMap().apply {
+      putDouble("temperature", prefs.getFloat("temperature", 0.7f).toDouble())
+      putBoolean("showReasoning", prefs.getBoolean("show_reasoning", false))
+      putInt("maxAgentSteps", prefs.getInt("max_steps", 6))
+    })
+  }
+
+  @ReactMethod
+  fun setGeneration(temperature: Double, showReasoning: Boolean, maxAgentSteps: Int, promise: Promise) {
+    prefs.edit()
+        .putFloat("temperature", temperature.toFloat().coerceIn(0f, 2f))
+        .putBoolean("show_reasoning", showReasoning)
+        .putInt("max_steps", maxAgentSteps.coerceIn(1, 12))
+        .apply()
+    promise.resolve(null)
+  }
+
+  // ---- Budget --------------------------------------------------------------
+  // Daily token cap + manual kill switch. Usage is recorded from each chat
+  // completion's reported token count (see chatCompletion).
+
+  private fun today(): String =
+      java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+
+  private fun tokensUsedToday(): Int =
+      if (prefs.getString("usage_day", "") == today()) prefs.getInt("usage_tokens", 0) else 0
+
+  private fun recordTokens(n: Int) {
+    val t = today()
+    val cur = if (prefs.getString("usage_day", "") == t) prefs.getInt("usage_tokens", 0) else 0
+    prefs.edit().putString("usage_day", t).putInt("usage_tokens", cur + n).apply()
+  }
+
+  @ReactMethod
+  fun getBudget(promise: Promise) = io.execute {
+    promise.resolve(Arguments.createMap().apply {
+      putInt("dailyTokenCap", prefs.getInt("budget_cap", 0)) // 0 = unlimited
+      putInt("tokensUsedToday", tokensUsedToday())
+      putBoolean("autonomyPaused", prefs.getBoolean("autonomy_paused", false))
+    })
+  }
+
+  @ReactMethod
+  fun setBudget(dailyTokenCap: Int, autonomyPaused: Boolean, promise: Promise) {
+    prefs.edit()
+        .putInt("budget_cap", dailyTokenCap.coerceAtLeast(0))
+        .putBoolean("autonomy_paused", autonomyPaused)
+        .apply()
+    promise.resolve(null)
+  }
+
+  // ---- Memories ------------------------------------------------------------
+  // Persistent facts injected into every system prompt.
+
+  private fun memoriesArray(): JSONArray =
+      runCatching { JSONArray(prefs.getString("memories", "[]")) }.getOrDefault(JSONArray())
+
+  @ReactMethod
+  fun getMemories(promise: Promise) = io.execute {
+    val arr = Arguments.createArray()
+    val mem = memoriesArray()
+    for (i in 0 until mem.length()) {
+      val o = mem.getJSONObject(i)
+      arr.pushMap(Arguments.createMap().apply {
+        putString("id", o.optString("id"))
+        putString("key", o.optString("key"))
+        putString("content", o.optString("content"))
+        putString("category", o.optString("category", "general"))
+      })
+    }
+    promise.resolve(arr)
+  }
+
+  @ReactMethod
+  fun addMemory(key: String, content: String, category: String, promise: Promise) = io.execute {
+    val mem = memoriesArray()
+    mem.put(JSONObject().apply {
+      put("id", System.currentTimeMillis().toString())
+      put("key", key)
+      put("content", content)
+      put("category", category.ifBlank { "general" })
+    })
+    prefs.edit().putString("memories", mem.toString()).apply()
+    promise.resolve(null)
+  }
+
+  @ReactMethod
+  fun deleteMemory(id: String, promise: Promise) = io.execute {
+    val mem = memoriesArray()
+    val out = JSONArray()
+    for (i in 0 until mem.length()) {
+      val o = mem.getJSONObject(i)
+      if (o.optString("id") != id) out.put(o)
+    }
+    prefs.edit().putString("memories", out.toString()).apply()
+    promise.resolve(null)
+  }
+
+  /** Memories formatted for the system prompt. */
+  private fun memoriesBlock(): String {
+    val mem = memoriesArray()
+    if (mem.length() == 0) return ""
+    val lines = StringBuilder("\n\n## Learned memories\n")
+    for (i in 0 until mem.length()) {
+      val o = mem.getJSONObject(i)
+      lines.append("- ").append(o.optString("key")).append(": ")
+          .append(o.optString("content")).append('\n')
+    }
+    return lines.toString().trimEnd()
+  }
+
+  // ---- MCP servers ---------------------------------------------------------
+
+  private fun mcpArray(): JSONArray =
+      runCatching { JSONArray(prefs.getString("mcp_servers", "[]")) }.getOrDefault(JSONArray())
+
+  @ReactMethod
+  fun getMcpServers(promise: Promise) = io.execute {
+    val arr = Arguments.createArray()
+    val list = mcpArray()
+    for (i in 0 until list.length()) {
+      val o = list.getJSONObject(i)
+      arr.pushMap(Arguments.createMap().apply {
+        putString("id", o.optString("id"))
+        putString("name", o.optString("name"))
+        putString("url", o.optString("url"))
+        putBoolean("enabled", o.optBoolean("enabled", true))
+      })
+    }
+    promise.resolve(arr)
+  }
+
+  @ReactMethod
+  fun addMcpServer(name: String, url: String, promise: Promise) = io.execute {
+    val list = mcpArray()
+    list.put(JSONObject().apply {
+      put("id", System.currentTimeMillis().toString())
+      put("name", name)
+      put("url", url)
+      put("enabled", true)
+    })
+    prefs.edit().putString("mcp_servers", list.toString()).apply()
+    promise.resolve(null)
+  }
+
+  @ReactMethod
+  fun deleteMcpServer(id: String, promise: Promise) = io.execute {
+    val list = mcpArray()
+    val out = JSONArray()
+    for (i in 0 until list.length()) {
+      val o = list.getJSONObject(i)
+      if (o.optString("id") != id) out.put(o)
+    }
+    prefs.edit().putString("mcp_servers", out.toString()).apply()
+    promise.resolve(null)
+  }
+
+  // ---- Settings export / import --------------------------------------------
+
+  @ReactMethod
+  fun exportSettings(promise: Promise) = io.execute {
+    val out = JSONObject()
+    out.put("soul", prefs.getString("soul", ""))
+    out.put("memories", memoriesArray())
+    out.put("mcpServers", mcpArray())
+    out.put("heartbeat", JSONObject().apply {
+      put("enabled", prefs.getBoolean("hb_enabled", false))
+      put("intervalMinutes", prefs.getInt("hb_interval", 60))
+      put("activeStartHour", prefs.getInt("hb_start", 8))
+      put("activeEndHour", prefs.getInt("hb_end", 22))
+    })
+    out.put("generation", JSONObject().apply {
+      put("temperature", prefs.getFloat("temperature", 0.7f).toDouble())
+      put("showReasoning", prefs.getBoolean("show_reasoning", false))
+      put("maxAgentSteps", prefs.getInt("max_steps", 6))
+    })
+    out.put("budget", JSONObject().apply {
+      put("dailyTokenCap", prefs.getInt("budget_cap", 0))
+    })
+    out.put("sandboxEnabled", prefs.getBoolean("sandbox_enabled", true))
+    out.put("daemonEnabled", prefs.getBoolean("daemon_enabled", false))
+    promise.resolve(out.toString(2))
+  }
+
+  @ReactMethod
+  fun importSettings(json: String, promise: Promise) = io.execute {
+    try {
+      val o = JSONObject(json)
+      val e = prefs.edit()
+      o.optString("soul").let { e.putString("soul", it) }
+      o.optJSONArray("memories")?.let { e.putString("memories", it.toString()) }
+      o.optJSONArray("mcpServers")?.let { e.putString("mcp_servers", it.toString()) }
+      o.optJSONObject("heartbeat")?.let { hb ->
+        e.putBoolean("hb_enabled", hb.optBoolean("enabled", false))
+        e.putInt("hb_interval", hb.optInt("intervalMinutes", 60))
+        e.putInt("hb_start", hb.optInt("activeStartHour", 8))
+        e.putInt("hb_end", hb.optInt("activeEndHour", 22))
+      }
+      o.optJSONObject("generation")?.let { g ->
+        e.putFloat("temperature", g.optDouble("temperature", 0.7).toFloat())
+        e.putBoolean("show_reasoning", g.optBoolean("showReasoning", false))
+        e.putInt("max_steps", g.optInt("maxAgentSteps", 6))
+      }
+      o.optJSONObject("budget")?.let { b -> e.putInt("budget_cap", b.optInt("dailyTokenCap", 0)) }
+      if (o.has("sandboxEnabled")) e.putBoolean("sandbox_enabled", o.optBoolean("sandboxEnabled"))
+      if (o.has("daemonEnabled")) e.putBoolean("daemon_enabled", o.optBoolean("daemonEnabled"))
+      e.apply()
+      promise.resolve(null)
+    } catch (ex: Exception) {
+      promise.reject("mve_error", "Invalid settings file: ${ex.message}")
+    }
   }
 
   // ---- Sandbox: terminal + files ------------------------------------------

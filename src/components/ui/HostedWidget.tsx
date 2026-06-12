@@ -14,6 +14,7 @@ import { Theme } from '../../theme';
 interface Props {
   widget: DesktopWidget;
   onMove: (id: number, x: number, y: number) => void;
+  onResize: (id: number, w: number, h: number) => void;
   onRemove: (id: number) => void;
 }
 
@@ -21,9 +22,47 @@ interface Props {
  * A real hosted AppWidget on the desktop. Only the top handle is draggable, so
  * the widget body itself stays fully interactive (buttons, scrolling, etc.).
  */
-export const HostedWidget: React.FC<Props> = ({ widget, onMove, onRemove }) => {
+export const HostedWidget: React.FC<Props> = ({
+  widget,
+  onMove,
+  onResize,
+  onRemove,
+}) => {
   const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const zIndex = useRef(new Animated.Value(1)).current;
+  const [liveSize, setLiveSize] = React.useState<{ w: number; h: number } | null>(
+    null,
+  );
+  const sizeRef = useRef({ w: widget.w, h: widget.h });
+  sizeRef.current = { w: widget.w, h: widget.h };
+
+  // Bottom-right grip: drag to resize, clamped to sane widget bounds.
+  const resizer = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => zIndex.setValue(999),
+      onPanResponderMove: (_e, g) => {
+        setLiveSize({
+          w: Math.max(100, sizeRef.current.w + g.dx),
+          h: Math.max(70, sizeRef.current.h + g.dy),
+        });
+      },
+      onPanResponderRelease: (_e, g) => {
+        zIndex.setValue(1);
+        setLiveSize(null);
+        onResize(
+          widget.widgetId,
+          Math.round(Math.max(100, sizeRef.current.w + g.dx)),
+          Math.round(Math.max(70, sizeRef.current.h + g.dy)),
+        );
+      },
+      onPanResponderTerminate: () => {
+        zIndex.setValue(1);
+        setLiveSize(null);
+      },
+    }),
+  ).current;
 
   const responder = useRef(
     PanResponder.create({
@@ -49,8 +88,8 @@ export const HostedWidget: React.FC<Props> = ({ widget, onMove, onRemove }) => {
         {
           left: widget.x,
           top: widget.y,
-          width: widget.w,
-          height: widget.h,
+          width: liveSize?.w ?? widget.w,
+          height: liveSize?.h ?? widget.h,
           zIndex: zIndex as any,
         },
         { transform: pan.getTranslateTransform() },
@@ -76,6 +115,10 @@ export const HostedWidget: React.FC<Props> = ({ widget, onMove, onRemove }) => {
           </Text>
         )}
       </View>
+      {/* Resize grip (bottom-right corner). */}
+      <View style={styles.resizeGrip} {...resizer.panHandlers}>
+        <Text style={styles.resizeGlyph}>⤡</Text>
+      </View>
     </Animated.View>
   );
 };
@@ -99,6 +142,18 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.18)',
   },
   grip: { color: '#cdd9e6', fontSize: 12, fontWeight: '700', letterSpacing: 1 },
+  resizeGrip: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(10,20,35,0.7)',
+    borderTopLeftRadius: 12,
+  },
+  resizeGlyph: { color: '#cdd9e6', fontSize: 15, fontWeight: '700' },
   removeBtn: {
     width: 26,
     height: 22,

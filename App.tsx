@@ -99,6 +99,7 @@ import {
   addDesktopWidget,
   removeDesktopWidget,
   moveDesktopWidget,
+  resizeDesktopWidget,
   type LauncherState,
 } from './src/db/LauncherStore';
 
@@ -673,6 +674,13 @@ const App: React.FC = () => {
     [update, snapToGrid],
   );
 
+  const resizeWidget = useCallback(
+    (id: number, w: number, h: number) => {
+      update(s => resizeDesktopWidget(s, id, w, h));
+    },
+    [update],
+  );
+
   const pinnedApps = useMemo(
     () =>
       (state?.pinned ?? []).map(p => appsByPkg[p]).filter(Boolean) as AppInfo[],
@@ -753,6 +761,7 @@ const App: React.FC = () => {
                 update(s => moveDesktopIcon(s, pkg, col, row))
               }
               onMoveWidget={moveWidget}
+              onResizeWidget={resizeWidget}
               onRemoveWidget={removeWidget}
               onEmptyMenu={emptyDesktopMenu}
             />

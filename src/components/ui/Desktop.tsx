@@ -27,6 +27,7 @@ interface Props {
   onIconMenu: (pkg: string) => void;
   onMoveIcon: (pkg: string, col: number, row: number) => void;
   onMoveWidget: (id: number, x: number, y: number) => void;
+  onResizeWidget: (id: number, w: number, h: number) => void;
   onRemoveWidget: (id: number) => void;
   onEmptyMenu: () => void;
 }
@@ -43,6 +44,7 @@ export const Desktop: React.FC<Props> = ({
   onIconMenu,
   onMoveIcon,
   onMoveWidget,
+  onResizeWidget,
   onRemoveWidget,
   onEmptyMenu,
 }) => {
@@ -110,6 +112,7 @@ export const Desktop: React.FC<Props> = ({
           key={w.widgetId}
           widget={w}
           onMove={onMoveWidget}
+          onResize={onResizeWidget}
           onRemove={onRemoveWidget}
         />
       ))}
